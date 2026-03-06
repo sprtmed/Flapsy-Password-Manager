@@ -249,7 +249,12 @@ struct VaultItemRow: View {
 
             Spacer()
 
-            if vault.flaggedItemIDs.contains(item.id) {
+            if vault.compromisedItemIDs.contains(item.id) {
+                Image(systemName: "exclamationmark.shield.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.accentRed)
+                    .help(healthTooltip)
+            } else if vault.flaggedItemIDs.contains(item.id) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 10))
                     .foregroundColor(theme.accentYellow)
@@ -317,6 +322,7 @@ struct VaultItemRow: View {
 
     private var healthTooltip: String {
         var issues: [String] = []
+        if vault.compromisedItemIDs.contains(item.id) { issues.append("Breached password") }
         if vault.weakPasswordItemIDs.contains(item.id) { issues.append("Weak password") }
         if vault.reusedPasswordItemIDs.contains(item.id) { issues.append("Reused password") }
         if vault.duplicateLoginItemIDs.contains(item.id) { issues.append("Duplicate login") }
