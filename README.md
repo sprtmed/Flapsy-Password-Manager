@@ -74,6 +74,8 @@ This is a password manager, so security isn't a feature — it's the foundation.
 | **Vault backup** | Rolling backup (`vault.enc.bak`) created automatically on every save |
 | **Network** | Outbound only — a single GitHub API call to check for updates. No telemetry, no analytics, no cloud sync |
 | **Biometrics** | Touch ID via `LAContext` with `.biometryCurrentSet` (invalidates on enrollment change) |
+| **Export protection** | CSV (plaintext) export requires master password re-entry before any data leaves the vault |
+| **Import size limit** | 256 MB cap on imported files to prevent out-of-memory attacks from malicious or corrupt data |
 | **Runtime** | Hardened Runtime enabled |
 
 ### How your vault is encrypted
