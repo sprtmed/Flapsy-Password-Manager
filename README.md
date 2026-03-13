@@ -1,3 +1,6 @@
+> **Warning**
+> We do not endorse, develop, nor support KNOX Password Manager; use it at your own risk.
+
 # KNOX Password Manager
 
 **A no-nonsense password manager for Mac.**
