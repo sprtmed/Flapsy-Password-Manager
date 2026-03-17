@@ -41,7 +41,7 @@ final class ExportService {
 
         switch format {
         case .encryptedBackup:
-            panel.nameFieldStringValue = "knox-backup.knox"
+            panel.nameFieldStringValue = "knox-backup"
             panel.allowedContentTypes = [UTType(filenameExtension: "knox") ?? .data]
             panel.message = "Choose where to save your encrypted backup"
         case .csv:
