@@ -216,12 +216,25 @@ struct ItemDetailView: View {
                     vault.cancelEditing()
                 },
                 onDelete: {
-                    vault.deleteItem(item.id)
-                    vault.isEditingItem = false
+                    if settings.confirmBeforeDelete {
+                        showDeleteConfirmation = true
+                    } else {
+                        vault.deleteItem(item.id)
+                        vault.isEditingItem = false
+                    }
                 }
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.move(edge: .trailing).combined(with: .opacity))
+            .alert("Delete Item", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    vault.deleteItem(item.id)
+                    vault.isEditingItem = false
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Are you sure you want to delete \"\(item.name)\"?")
+            }
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
@@ -307,8 +320,12 @@ struct ItemDetailView: View {
                         Spacer()
 
                         Button(action: {
-                            vault.deleteItem(item.id)
-                            vault.isEditingItem = false
+                            if settings.confirmBeforeDelete {
+                                showDeleteConfirmation = true
+                            } else {
+                                vault.deleteItem(item.id)
+                                vault.isEditingItem = false
+                            }
                         }) {
                             Image(systemName: "trash")
                                 .font(.system(size: 11))
@@ -339,6 +356,15 @@ struct ItemDetailView: View {
                 }
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
+            .alert("Delete Item", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    vault.deleteItem(item.id)
+                    vault.isEditingItem = false
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Are you sure you want to delete \"\(item.name)\"?")
+            }
         }
     }
 
