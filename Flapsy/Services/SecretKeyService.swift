@@ -115,6 +115,17 @@ final class SecretKeyService {
         return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
     }
 
+    /// Validates that a Secret Key has sufficient entropy by rejecting obvious
+    /// patterns: all zeros, single-byte repeats, and sequential byte values.
+    static func hasAdequateEntropy(_ keyData: Data) -> Bool {
+        guard keyData.count == keyLength else { return false }
+        if keyData.allSatisfy({ $0 == 0 }) { return false }
+        if Set(keyData).count == 1 { return false }
+        let sequential = Data(0..<UInt8(keyLength))
+        if keyData == sequential { return false }
+        return true
+    }
+
     // MARK: - Display Format
 
     /// Formats a Secret Key as a human-readable string for the "Emergency Kit".

@@ -134,6 +134,13 @@ final class ExportService {
 
     // MARK: - Helpers
 
+    /// Truncates field values that exceed the maximum safe CSV cell length.
+    /// Some spreadsheet applications corrupt cells beyond 32,767 characters.
+    private func truncateField(_ value: String, maxLength: Int = 32_767) -> String {
+        guard value.count > maxLength else { return value }
+        return String(value.prefix(maxLength - 3)) + "..."
+    }
+
     private func escapeCSVField(_ value: String) -> String {
         var field = value
         // Neutralize formula injection: prefix with single quote if field starts

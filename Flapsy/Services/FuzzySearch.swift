@@ -6,6 +6,13 @@ struct FuzzyMatch {
 }
 
 enum FuzzySearch {
+    /// Pre-normalizes Unicode combining characters for consistent matching.
+    /// Handles cases like é (U+00E9) vs e + ´ (U+0065 U+0301).
+    private static func canonicalizeInput(_ input: String) -> String {
+        input.precomposedStringWithCanonicalMapping.lowercased()
+            .folding(options: [.diacriticInsensitive], locale: .current)
+    }
+
     /// Fuzzy match `query` against `text`. Returns nil if not all query characters found.
     /// Score rewards consecutive matches and word-boundary matches.
     static func match(query: String, in text: String) -> FuzzyMatch? {

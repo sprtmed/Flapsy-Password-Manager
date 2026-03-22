@@ -50,6 +50,21 @@ final class ClipboardService {
         clearTimer = nil
     }
 
+    /// Removes transient originator metadata that some clipboard managers use
+    /// to track which application placed the current pasteboard content.
+    private func stripOriginatorMetadata() {
+        let pasteboard = NSPasteboard.general
+        let transientTypes = [
+            NSPasteboard.PasteboardType("com.apple.pasteboard.promised-type-identifiers"),
+            NSPasteboard.PasteboardType("net.antelle.keeweb.clipboard-clear")
+        ]
+        for ptype in transientTypes {
+            if pasteboard.data(forType: ptype) != nil {
+                pasteboard.setData(Data(), forType: ptype)
+            }
+        }
+    }
+
     /// Clears the clipboard immediately if it still holds content we placed,
     /// and cancels any pending auto-clear timer.
     func forceClearIfOwned() {

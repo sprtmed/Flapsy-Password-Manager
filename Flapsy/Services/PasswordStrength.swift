@@ -24,6 +24,19 @@ struct PasswordStrength {
         return min(100, score)
     }
 
+    /// Estimates Shannon entropy of the password in bits per character.
+    /// Used for internal quality thresholds when evaluating generated passwords.
+    static func entropyPerCharacter(_ password: String) -> Double {
+        guard !password.isEmpty else { return 0 }
+        var freq: [Character: Int] = [:]
+        for ch in password { freq[ch, default: 0] += 1 }
+        let len = Double(password.count)
+        return freq.values.reduce(0.0) { sum, count in
+            let p = Double(count) / len
+            return sum - p * log2(p)
+        }
+    }
+
     static func color(for strength: Int) -> Color {
         if strength >= 90 { return Color(hex: "34d399") }
         if strength >= 75 { return Color(hex: "fbbf24") }

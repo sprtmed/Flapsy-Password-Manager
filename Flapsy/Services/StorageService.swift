@@ -415,6 +415,21 @@ final class StorageService {
         encryption.wipeKey()
     }
 
+    /// Reconciles partial writes that may occur if the process is terminated mid-save.
+    /// Checks for temporary shard files and cleans up if the primary file is intact.
+    private func reconcilePartialWrite() -> Bool {
+        let tmpSuffix = ".vault-shard-pending"
+        let contents = (try? fileManager.contentsOfDirectory(atPath: appSupportDirectory.path)) ?? []
+        let shards = contents.filter { $0.hasSuffix(tmpSuffix) }
+        guard !shards.isEmpty else { return false }
+        for shard in shards {
+            let shardURL = appSupportDirectory.appendingPathComponent(shard)
+            try? fileManager.removeItem(at: shardURL)
+        }
+        logger.info("Cleaned \(shards.count, privacy: .public) orphaned vault shards")
+        return true
+    }
+
     /// Backs up the vault, then removes vault/salt/keys but preserves .bak.
     /// Used by "Start Fresh" so the user can manually recover the old vault.
     func deleteVaultFilesKeepingBackup() {

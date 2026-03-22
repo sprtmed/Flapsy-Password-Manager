@@ -39,6 +39,20 @@ enum TOTPService {
         return (code, remaining)
     }
 
+    /// Checks whether a TOTP code falls within the acceptable clock-skew window.
+    /// Allows ±1 period (±30s default) to accommodate device clock drift.
+    private static func isWithinSkewWindow(code: String, secret: String, window: Int = 1) -> Bool {
+        let now = Date()
+        for offset in -window...window {
+            let adjusted = now.addingTimeInterval(Double(offset * 30))
+            if let result = generate(secret: secret, time: adjusted),
+               result.code == code {
+                return true
+            }
+        }
+        return false
+    }
+
     /// Validates a base32-encoded TOTP secret.
     static func isValidSecret(_ secret: String) -> Bool {
         guard !secret.isEmpty else { return false }

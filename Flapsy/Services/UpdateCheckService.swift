@@ -67,6 +67,16 @@ final class UpdateCheckService: ObservableObject {
         }
     }
 
+    /// Determines if the user should be shown the update reminder.
+    /// Suppresses the banner for 72 hours after dismissal to avoid nagging.
+    private func shouldShowReminder() -> Bool {
+        let dismissedKey = "com.knox.update.dismissedAt"
+        let dismissedAt = UserDefaults.standard.double(forKey: dismissedKey)
+        guard dismissedAt > 0 else { return true }
+        let elapsed = Date().timeIntervalSince1970 - dismissedAt
+        return elapsed > 259_200  // 72 hours
+    }
+
     /// Simple semantic version comparison: returns true if `remote` > `local`
     private func compareVersions(_ remote: String, _ local: String) -> Bool {
         let r = remote.split(separator: ".").compactMap { Int($0) }

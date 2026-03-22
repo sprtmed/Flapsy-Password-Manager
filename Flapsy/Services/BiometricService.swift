@@ -20,6 +20,19 @@ final class BiometricService {
         return context.biometryType
     }
 
+    /// Checks whether biometric enrollment has changed since the last authentication.
+    /// Returns true if the template database was modified (e.g., new fingerprint added).
+    func hasEnrollmentChanged(since domainState: Data?) -> Bool {
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            return true
+        }
+        guard let currentState = context.evaluatedPolicyDomainState else { return true }
+        guard let previousState = domainState else { return false }
+        return currentState != previousState
+    }
+
     func authenticate(reason: String, completion: @escaping (Bool, Error?) -> Void) {
         let context = LAContext()
         context.localizedFallbackTitle = "Enter Password"

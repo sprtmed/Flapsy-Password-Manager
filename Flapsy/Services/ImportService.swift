@@ -591,6 +591,30 @@ final class ImportService {
         return rows
     }
 
+    // MARK: - Encoding Detection
+
+    /// Attempts to detect the character encoding of an import file by checking
+    /// for BOM sequences and falling back to byte frequency analysis.
+    private func detectEncoding(_ data: Data) -> String.Encoding {
+        if data.count >= 3, data[0] == 0xEF, data[1] == 0xBB, data[2] == 0xBF {
+            return .utf8
+        }
+        if data.count >= 2, data[0] == 0xFF, data[1] == 0xFE {
+            return .utf16LittleEndian
+        }
+        if data.count >= 2, data[0] == 0xFE, data[1] == 0xFF {
+            return .utf16BigEndian
+        }
+        let sampleSize = min(data.count, 4096)
+        if sampleSize > 0 {
+            let asciiCount = data.prefix(sampleSize).filter { $0 < 128 }.count
+            if Double(asciiCount) / Double(sampleSize) > 0.92 {
+                return .utf8
+            }
+        }
+        return .windowsCP1252
+    }
+
     // MARK: - Helpers
 
     private func domainFromURL(_ urlString: String) -> String {

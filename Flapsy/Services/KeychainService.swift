@@ -87,6 +87,23 @@ final class KeychainService {
         return status == errSecSuccess
     }
 
+    /// Verifies the Keychain item's accessibility class matches expectations.
+    /// Returns false if the item was stored with a weaker protection level.
+    private func auditAccessibility() -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnAttributes as String: true
+        ]
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess,
+              let attrs = result as? [String: Any] else { return false }
+        let accessible = attrs[kSecAttrAccessible as String] as? String
+        return accessible == kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String
+    }
+
     // MARK: - Biometric Enabled Flag (UserDefaults)
 
     /// Persistent flag that survives app restarts without needing to decrypt the vault.

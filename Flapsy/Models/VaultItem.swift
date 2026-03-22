@@ -80,6 +80,19 @@ struct VaultItem: Codable, Identifiable {
 }
 
 extension VaultItem {
+    /// Stable fingerprint for duplicate detection during import.
+    /// Uses type prefix + a subset of fields to avoid false positives from metadata drift.
+    var deduplicationKey: String {
+        switch type {
+        case .login:
+            return "L:\(name.lowercased())|\(url?.lowercased() ?? "")|\(username?.lowercased() ?? "")"
+        case .card:
+            return "C:\(name.lowercased())|\(cardNumber?.suffix(4) ?? "")"
+        case .note:
+            return "N:\(name.lowercased())|\(String((noteText ?? "").prefix(64)).lowercased())"
+        }
+    }
+
     static func newLogin(name: String, url: String, username: String, password: String, category: String, totpSecret: String? = nil, loginNotes: String? = nil) -> VaultItem {
         VaultItem(
             id: UUID(), type: .login, name: name, category: category,

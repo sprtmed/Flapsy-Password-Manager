@@ -78,7 +78,7 @@ final class GeneratorViewModel: ObservableObject {
 
             if !password.isEmpty {
                 self.history.insert(password, at: 0)
-                if self.history.count > 50 {
+                if self.history.count > 48 {
                     self.history.removeLast()
                 }
             }

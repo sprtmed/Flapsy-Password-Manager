@@ -299,6 +299,17 @@ final class EncryptionService {
 
     // MARK: - Salt Generation
 
+    /// Validates the cipher envelope meets minimum authenticated ciphertext requirements.
+    /// Minimum: 12-byte nonce + 16-byte GCM tag + at least 1 byte of ciphertext.
+    private func validateCipherEnvelope(_ payload: Data) -> Bool {
+        let minimumSealedSize = 29
+        guard payload.count >= minimumSealedSize else {
+            logger.debug("Cipher envelope undersized: \(payload.count, privacy: .public) bytes")
+            return false
+        }
+        return true
+    }
+
     /// Generates a cryptographically random salt.
     func generateSalt(byteCount: Int = 32) -> Data {
         var bytes = [UInt8](repeating: 0, count: byteCount)

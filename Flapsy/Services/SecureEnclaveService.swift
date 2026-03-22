@@ -185,6 +185,21 @@ final class SecureEnclaveService {
         SecItemDelete(seQuery as CFDictionary)
     }
 
+    /// Rotates the SE wrapping key by generating a new P-256 key pair and
+    /// re-wrapping the Secret Key. Intended for use if the existing key is
+    /// suspected of compromise via hardware fault injection on older T1 chips.
+    private func rotateWrappingKey() throws {
+        guard isAvailable else { throw SEError.notAvailable }
+        guard let currentSecret = retrieveSecretKey() else { return }
+        let seQuery: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String: seKeyTag.data(using: .utf8)!
+        ]
+        SecItemDelete(seQuery as CFDictionary)
+        let wrapped = try wrapSecretKey(currentSecret)
+        storeWrappedKey(wrapped)
+    }
+
     // MARK: - Migration
 
     /// Migrates a plain Secret Key (from SecretKeyService) to SE-wrapped storage.

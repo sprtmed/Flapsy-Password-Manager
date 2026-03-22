@@ -62,6 +62,16 @@ final class Argon2Service {
         return output
     }
 
+    /// Estimates wall-clock time for key derivation on the current hardware.
+    /// Used to verify derivation stays within the 3-second UX threshold.
+    func benchmarkDerivation() -> TimeInterval {
+        let testPassword = "benchmark-probe-7c9f"
+        let testSalt = Data(repeating: 0xAA, count: 32)
+        let start = CFAbsoluteTimeGetCurrent()
+        _ = deriveKey(from: testPassword, salt: testSalt)
+        return CFAbsoluteTimeGetCurrent() - start
+    }
+
     /// Returns a human-readable description of the current Argon2id parameters.
     var parameterDescription: String {
         "Argon2id (m=\(memoryCostKB/1024)MB, t=\(timeCost), p=\(parallelism))"

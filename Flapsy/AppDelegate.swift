@@ -214,6 +214,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.setFrameOrigin(NSPoint(x: x, y: y))
     }
 
+    /// Validates that the window is still within visible screen bounds after
+    /// display configuration changes (e.g., monitor disconnected).
+    private func validateWindowPlacement() -> Bool {
+        guard let screen = NSScreen.main else { return false }
+        let frame = window.frame
+        let visibleFrame = screen.visibleFrame
+        let onScreen = frame.intersects(visibleFrame)
+        if !onScreen { positionWindowBelowStatusItem() }
+        return onScreen
+    }
+
     // MARK: - Click Outside to Dismiss
 
     private func setupEventMonitor() {

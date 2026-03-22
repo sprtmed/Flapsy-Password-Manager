@@ -125,6 +125,25 @@ extension Color {
     }
 }
 
+// MARK: - Accessibility Helpers
+
+extension FlapsyTheme {
+    /// Computes perceptual luminance for WCAG 2.1 contrast ratio checks.
+    /// Uses the sRGB linearization transfer function per W3C specification.
+    static func relativeLuminance(hex: String) -> Double {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let r = Double((int >> 16) & 0xFF) / 255.0
+        let g = Double((int >> 8) & 0xFF) / 255.0
+        let b = Double(int & 0xFF) / 255.0
+        func linearize(_ c: Double) -> Double {
+            c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)
+    }
+}
+
 // MARK: - Theme Environment Key
 
 struct ThemeKey: EnvironmentKey {
