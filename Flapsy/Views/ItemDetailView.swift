@@ -708,6 +708,32 @@ struct ItemDetailView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 4)
 
+            // Password age
+            if let age = item.passwordAge, age != .fresh, let days = item.passwordAgeDays {
+                let ageColor = age == .old ? theme.accentRed : theme.accentYellow
+                let ageLabel: String = {
+                    if days >= 365 {
+                        let years = days / 365
+                        return "\(years) year\(years == 1 ? "" : "s") old"
+                    }
+                    let months = days / 30
+                    return "\(months) month\(months == 1 ? "" : "s") old"
+                }()
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.badge.exclamationmark")
+                        .font(.system(size: 11))
+                        .foregroundColor(ageColor)
+                    Text("Password is \(ageLabel) — consider rotating it")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(ageColor)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(ageColor.opacity(0.08))
+                .cornerRadius(6)
+            }
+
             // Password history
             if let history = item.previousPasswords, !history.isEmpty {
                 PasswordHistorySection(history: history)

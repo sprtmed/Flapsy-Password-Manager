@@ -17,6 +17,7 @@ struct VaultListView: View {
                 searchBar
                 typeFilterRow
                 categoryFilterRow
+                sortRow
                 itemList
 
                 if vault.selectedItem != nil {
@@ -162,6 +163,32 @@ struct VaultListView: View {
         .padding(.bottom, 6)
     }
 
+    // MARK: - Sort
+
+    private var sortRow: some View {
+        HStack(spacing: 0) {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(theme.textGhost)
+                .padding(.trailing, 4)
+            ForEach(SortOption.allCases, id: \.self) { option in
+                Button(action: { vault.sortOption = option }) {
+                    Text(option.rawValue)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(vault.sortOption == option ? theme.accentBlueLt : theme.textGhost)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(vault.sortOption == option ? theme.pillBg : Color.clear)
+                        .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 2)
+    }
+
     // MARK: - Item List
 
     private var itemList: some View {
@@ -276,6 +303,13 @@ struct VaultItemRow: View {
                     .help(healthTooltip)
             }
 
+            if let age = item.passwordAge, age != .fresh {
+                Image(systemName: "clock.badge.exclamationmark")
+                    .font(.system(size: 10))
+                    .foregroundColor(age == .old ? theme.accentRed : theme.accentYellow)
+                    .help(passwordAgeTooltip)
+            }
+
             if item.type == .login, item.password != nil && !item.password!.isEmpty {
                 Button(action: { vault.copyToClipboard(item.password!, fieldName: "quickcopy-\(item.id)") }) {
                     Image(systemName: vault.copiedField == "quickcopy-\(item.id)" ? "checkmark" : "doc.on.doc")
@@ -342,6 +376,16 @@ struct VaultItemRow: View {
         if vault.reusedPasswordItemIDs.contains(item.id) { issues.append("Reused password") }
         if vault.duplicateLoginItemIDs.contains(item.id) { issues.append("Duplicate login") }
         return issues.joined(separator: ", ")
+    }
+
+    private var passwordAgeTooltip: String {
+        guard let days = item.passwordAgeDays else { return "" }
+        if days >= 365 {
+            let years = days / 365
+            return "Password unchanged for \(years) year\(years == 1 ? "" : "s")"
+        }
+        let months = days / 30
+        return "Password unchanged for \(months) month\(months == 1 ? "" : "s")"
     }
 
     private var itemIcon: some View {

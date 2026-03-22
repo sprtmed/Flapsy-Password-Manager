@@ -1,13 +1,17 @@
 import SwiftUI
+import ServiceManagement
 
 struct SettingsView: View {
     @EnvironmentObject var settings: SettingsViewModel
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
 
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                launchAtLoginSection
                 themeToggle
                 keepWindowOpenSection
                 menuBarIconPicker
@@ -31,6 +35,44 @@ struct SettingsView: View {
             .padding(16)
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    // MARK: - Launch at Login
+
+    private var launchAtLoginSection: some View {
+        VStack(spacing: 4) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "sunrise.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.accentYellow)
+                    Text("Launch at Login")
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundColor(theme.text)
+                }
+                Spacer()
+                FlapsyToggle(isOn: Binding(
+                    get: { launchAtLogin },
+                    set: { newValue in
+                        do {
+                            if newValue {
+                                try SMAppService.mainApp.register()
+                            } else {
+                                try SMAppService.mainApp.unregister()
+                            }
+                            launchAtLogin = newValue
+                        } catch {
+                            launchAtLogin = SMAppService.mainApp.status == .enabled
+                        }
+                    }
+                ))
+            }
+            .padding(.vertical, 4)
+            Text("Automatically start Knox when you log in to your Mac.")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(theme.textFaint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     // MARK: - Theme Toggle

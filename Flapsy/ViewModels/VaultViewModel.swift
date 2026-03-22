@@ -50,6 +50,14 @@ enum VaultPanel {
     case trash
 }
 
+enum SortOption: String, CaseIterable {
+    case nameAsc = "A→Z"
+    case nameDesc = "Z→A"
+    case newestFirst = "Newest"
+    case oldestFirst = "Oldest"
+    case recentlyModified = "Modified"
+}
+
 final class VaultViewModel: ObservableObject {
     // MARK: - App State
     @Published var currentScreen: AppScreen = .lock
@@ -92,6 +100,7 @@ final class VaultViewModel: ObservableObject {
     @Published var typeFilter: ItemType? = nil
     @Published var activeCategory: String = "all"
     @Published var showFavoritesOnly: Bool = false
+    @Published var sortOption: SortOption = .nameAsc
 
     // MARK: - Selection
     @Published var selectedItemID: UUID? = nil
@@ -255,7 +264,18 @@ final class VaultViewModel: ObservableObject {
         if searchText.isEmpty {
             return filtered.sorted { a, b in
                 if a.isFavorite != b.isFavorite { return a.isFavorite }
-                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+                switch sortOption {
+                case .nameAsc:
+                    return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+                case .nameDesc:
+                    return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedDescending
+                case .newestFirst:
+                    return a.createdAt > b.createdAt
+                case .oldestFirst:
+                    return a.createdAt < b.createdAt
+                case .recentlyModified:
+                    return a.modifiedAt > b.modifiedAt
+                }
             }
         }
 

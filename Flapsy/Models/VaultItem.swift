@@ -77,6 +77,24 @@ struct VaultItem: Codable, Identifiable {
         let weeks = days / 7
         return "\(weeks) week\(weeks == 1 ? "" : "s") ago"
     }
+
+    /// Number of days since the password was last changed (login items only).
+    var passwordAgeDays: Int? {
+        guard type == .login, password != nil, !password!.isEmpty else { return nil }
+        return Int(Date().timeIntervalSince(modifiedAt) / 86400)
+    }
+
+    /// nil = fine (<90 days), "aging" = 90–179 days, "old" = 180+ days
+    enum PasswordAge {
+        case fresh, aging, old
+    }
+
+    var passwordAge: PasswordAge? {
+        guard let days = passwordAgeDays else { return nil }
+        if days >= 180 { return .old }
+        if days >= 90 { return .aging }
+        return .fresh
+    }
 }
 
 extension VaultItem {

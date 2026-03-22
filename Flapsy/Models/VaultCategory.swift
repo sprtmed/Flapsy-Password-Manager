@@ -42,7 +42,7 @@ struct VaultCategory: Codable, Identifiable {
             case "personal": self.color = "8b5cf6"   // purple
             case "finance": self.color = "10b981"     // green
             case "entertainment": self.color = "f59e0b" // amber
-            default: self.color = "8b5cf6"            // purple fallback
+            default: self.color = "f97316"            // orange fallback
             }
         }
     }
