@@ -7,6 +7,7 @@ struct VaultListView: View {
     @Environment(\.theme) var theme
 
     @FocusState private var isSearchFieldFocused: Bool
+    @State private var keyMonitor: Any?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,38 +36,8 @@ struct VaultListView: View {
                 .frame(width: 0, height: 0)
                 .opacity(0)
         }
-        .onKeyPress(.downArrow) { navigateList(direction: 1); return .handled }
-        .onKeyPress(.upArrow) { navigateList(direction: -1); return .handled }
-        .onKeyPress(.return) {
-            if let id = vault.selectedItemID {
-                // Toggle selection off if already selected
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    vault.selectedItemID = nil
-                    vault.showPassword = false
-                    vault.showCardNumber = false
-                    vault.showCVV = false
-                    vault.isEditingItem = false
-                }
-            } else if let first = vault.filteredItems.first {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    selectItem(first.id)
-                }
-            }
-            return .handled
-        }
-        .onKeyPress(.escape) {
-            if vault.selectedItemID != nil {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    vault.selectedItemID = nil
-                    vault.showPassword = false
-                    vault.showCardNumber = false
-                    vault.showCVV = false
-                    vault.isEditingItem = false
-                }
-                return .handled
-            }
-            return .ignored
-        }
+        .onAppear { installKeyMonitor() }
+        .onDisappear { removeKeyMonitor() }
         .onChange(of: vault.isSearchFocused) { focused in
             if focused {
                 isSearchFieldFocused = true
@@ -76,6 +47,56 @@ struct VaultListView: View {
     }
 
     // MARK: - Keyboard Navigation
+
+    private func installKeyMonitor() {
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Only handle when vault list is the active panel
+            guard vault.currentPanel == .list else { return event }
+
+            switch Int(event.keyCode) {
+            case 125: // Down arrow
+                navigateList(direction: 1)
+                return nil
+            case 126: // Up arrow
+                navigateList(direction: -1)
+                return nil
+            case 36: // Return/Enter
+                if vault.selectedItemID != nil {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        vault.selectedItemID = nil
+                        vault.showPassword = false
+                        vault.showCardNumber = false
+                        vault.showCVV = false
+                        vault.isEditingItem = false
+                    }
+                } else if let first = vault.filteredItems.first {
+                    withAnimation(.easeInOut(duration: 0.15)) { selectItem(first.id) }
+                }
+                return nil
+            case 53: // Escape
+                if vault.selectedItemID != nil {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        vault.selectedItemID = nil
+                        vault.showPassword = false
+                        vault.showCardNumber = false
+                        vault.showCVV = false
+                        vault.isEditingItem = false
+                    }
+                    return nil
+                }
+                return event
+            default:
+                return event
+            }
+        }
+    }
+
+    private func removeKeyMonitor() {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
+    }
 
     private func navigateList(direction: Int) {
         let items = vault.filteredItems
