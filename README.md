@@ -1,21 +1,32 @@
-> **Warning**
-> We do not endorse, develop, nor support KNOX Password Manager; use it at your own risk.
-
-# KNOX Password Manager
+# Knox Password Manager
 
 **A no-nonsense password manager for Mac.**
 
-KNOX lives in your menu bar. It stores your passwords locally, encrypted with the same cryptography used by intelligence agencies. No cloud. No subscriptions. No bloat. Just your passwords, locked down tight.
+Knox lives in your menu bar. It stores your passwords locally, encrypted with the same cryptography used by intelligence agencies. No cloud. No subscriptions. No bloat. Just your passwords, locked down tight.
 
-We built KNOX because we were fed up. Every password manager out there keeps bolting on features nobody asked for — browser extensions that break, cloud sync that leaks, family plans, travel mode, dark web monitoring, "security scores." Meanwhile, the core job — *storing passwords securely* — gets buried under feature creep.
+We built Knox because we were fed up. Every password manager out there keeps bolting on features nobody asked for — browser extensions that break, cloud sync that leaks, family plans, travel mode, dark web monitoring, "security scores." Meanwhile, the core job — *storing passwords securely* — gets buried under feature creep.
 
-KNOX does one thing and does it well.
+Knox does one thing and does it well.
 
 ---
 
 ## Download
 
 Grab the latest release from the [Releases page](https://github.com/sprtmed/Knox-Password-Manager/releases/latest). Open the DMG, drag Knox to Applications, and launch. Fully notarized — no Gatekeeper warnings.
+
+---
+
+## Getting Started
+
+1. Launch Knox — it appears as a lock icon in your menu bar (top-right of your screen)
+2. Create a strong master password (12+ characters, scored in real-time)
+3. Save your **Emergency Kit** — Knox generates a 128-bit secret key displayed as a base32 string. Write it down and store it somewhere safe
+4. Optionally enable Touch ID for quick unlocking
+5. Import existing passwords from 1Password, Bitwarden, Chrome, or CSV — or start adding entries manually
+
+> **Your master password cannot be recovered.** There is no "forgot password" option — this is by design. If you lose both your master password and your secret key, your vault is gone forever.
+
+> **Back up regularly.** Use *Export > Encrypted Backup* to create a `.knox` file. Knox will remind you if it's been 30+ days since your last export.
 
 ---
 
@@ -55,7 +66,7 @@ Grab the latest release from the [Releases page](https://github.com/sprtmed/Knox
 
 ## Security
 
-This is a password manager, so security isn't a feature — it's the foundation. Here's exactly what KNOX uses:
+This is a password manager, so security isn't a feature — it's the foundation. Here's exactly what Knox uses:
 
 | Layer | Implementation |
 |-------|---------------|
@@ -102,13 +113,13 @@ Master Password + Salt (32 bytes)
     AES-256-GCM encrypt/decrypt
 ```
 
-Your vault file (`vault.enc`) contains a 40-byte header (`FLPV` magic + version + embedded salt) followed by the AES-256-GCM ciphertext and a 32-byte HMAC-SHA256 integrity tag. The HMAC is computed over the entire file (header + ciphertext) using a separate key derived via HKDF from the vault key. On every unlock, KNOX verifies the HMAC before trusting the data — any tampering or corruption is detected immediately.
+Your vault file (`vault.enc`) contains a 40-byte header (`FLPV` magic + version + embedded salt) followed by the AES-256-GCM ciphertext and a 32-byte HMAC-SHA256 integrity tag. The HMAC is computed over the entire file (header + ciphertext) using a separate key derived via HKDF from the vault key. On every unlock, Knox verifies the HMAC before trusting the data — any tampering or corruption is detected immediately.
 
 Even if someone steals the file, they need both your master password AND the 128-bit secret key to decrypt it. Brute-forcing that combination is computationally infeasible.
 
-### What KNOX can't protect against
+### What Knox can't protect against
 
-We believe in transparency. KNOX cannot defend against:
+We believe in transparency. Knox cannot defend against:
 
 - Malware running as your user (this applies to every password manager)
 - A compromised operating system or kernel
@@ -121,29 +132,47 @@ These are OS-level threats, not application-level ones.
 ## Requirements
 
 - macOS 14.0 (Sonoma) or later
-- Xcode 15+ (to build from source)
-- [xcodegen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+- Touch ID hardware (optional, for biometric unlock)
 
-## Build
+### Building from source
+
+- Xcode 15+
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
 
 ```bash
-# Clone the repo
 git clone https://github.com/sprtmed/Knox-Password-Manager.git
 cd Knox-Password-Manager
 
-# Generate Xcode project
 xcodegen generate
-
-# Build and run
 open Knox.xcodeproj
 # Press Cmd+R in Xcode
 ```
 
-After building, KNOX appears in your menu bar — look for the lock icon in the top-right of your screen.
+After building, Knox appears in your menu bar — look for the lock icon in the top-right of your screen.
 
 ---
 
-## Vault file format
+## Project Structure
+
+```
+Knox-Password-Manager/
+├── Flapsy/                     # Main app source (historical name)
+│   ├── FlapsyApp.swift         # @main entry point
+│   ├── AppDelegate.swift       # NSStatusItem + NSPopover + hotkey
+│   ├── Models/                 # VaultItem, VaultCategory, VaultData
+│   ├── ViewModels/             # VaultViewModel, GeneratorViewModel, SettingsViewModel
+│   ├── Views/                  # SwiftUI views (lock screen, vault list, settings, etc.)
+│   ├── Services/               # Encryption, storage, clipboard, biometrics, import/export
+│   ├── Crypto/Argon2/          # Vendored Argon2id C reference implementation
+│   └── Theme/                  # Dark & light theme definitions
+├── project.yml                 # XcodeGen project definition
+├── dist-entitlements.plist     # Distribution entitlements (notarized builds)
+└── LICENSE
+```
+
+---
+
+## Vault File Format
 
 For the security-curious:
 
@@ -160,7 +189,14 @@ Salt is stored separately in `salt.dat` (32 bytes + SHA-256 checksum = 64 bytes)
 
 ---
 
-## Why "KNOX"
+## Support
+
+- Report bugs: [GitHub Issues](https://github.com/sprtmed/Knox-Password-Manager/issues)
+- Request features: [GitHub Issues](https://github.com/sprtmed/Knox-Password-Manager/issues)
+
+---
+
+## Why "Knox"
 
 Fort Knox. Where the gold is kept. Seemed fitting for a vault.
 
