@@ -10,13 +10,13 @@ Knox does one thing and does it well.
 
 ---
 
-## Download
+## 📥 Download
 
 Grab the latest release from the [Releases page](https://github.com/sprtmed/Knox-Password-Manager/releases/latest). Open the DMG, drag Knox to Applications, and launch. Fully notarized — no Gatekeeper warnings.
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 1. Launch Knox — it appears as a lock icon in your menu bar (top-right of your screen)
 2. Create a strong master password (12+ characters, scored in real-time)
@@ -30,7 +30,7 @@ Grab the latest release from the [Releases page](https://github.com/sprtmed/Knox
 
 ---
 
-## Features
+## ✨ Features
 
 - **Menu bar app** — Click the icon or press `Cmd+Shift+P` to open. No dock icon, no window clutter
 - **Logins, cards & notes** — Store passwords, credit/debit cards (Visa, Mastercard, Amex, Discover, UnionPay), and secure notes — all encrypted in one vault
@@ -64,7 +64,7 @@ Grab the latest release from the [Releases page](https://github.com/sprtmed/Knox
 
 ---
 
-## Security
+## 🔒 Security
 
 This is a password manager, so security isn't a feature — it's the foundation. Here's exactly what Knox uses:
 
@@ -92,7 +92,7 @@ This is a password manager, so security isn't a feature — it's the foundation.
 | **Import size limit** | 256 MB cap on imported files to prevent out-of-memory attacks from malicious or corrupt data |
 | **Runtime** | Hardened Runtime enabled |
 
-### How your vault is encrypted
+### 🔑 How your vault is encrypted
 
 ```
 Master Password + Salt (32 bytes)
@@ -117,7 +117,7 @@ Your vault file (`vault.enc`) contains a 40-byte header (`FLPV` magic + version 
 
 Even if someone steals the file, they need both your master password AND the 128-bit secret key to decrypt it. Brute-forcing that combination is computationally infeasible.
 
-### What Knox can't protect against
+### ⚠️ What Knox can't protect against
 
 We believe in transparency. Knox cannot defend against:
 
@@ -129,12 +129,12 @@ These are OS-level threats, not application-level ones.
 
 ---
 
-## Requirements
+## 💻 Requirements
 
 - macOS 14.0 (Sonoma) or later
 - Touch ID hardware (optional, for biometric unlock)
 
-### Building from source
+### 🛠️ Building from source
 
 - Xcode 15+
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
@@ -152,7 +152,7 @@ After building, Knox appears in your menu bar — look for the lock icon in the 
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 Knox-Password-Manager/
@@ -172,7 +172,7 @@ Knox-Password-Manager/
 
 ---
 
-## Vault File Format
+## 🗄️ Vault File Format
 
 For the security-curious:
 
@@ -189,19 +189,19 @@ Salt is stored separately in `salt.dat` (32 bytes + SHA-256 checksum = 64 bytes)
 
 ---
 
-## Support
+## 🆘 Support
 
 - Report bugs: [GitHub Issues](https://github.com/sprtmed/Knox-Password-Manager/issues)
 - Request features: [GitHub Issues](https://github.com/sprtmed/Knox-Password-Manager/issues)
 
 ---
 
-## Why "Knox"
+## 🏛️ Why "Knox"
 
 Fort Knox. Where the gold is kept. Seemed fitting for a vault.
 
 ---
 
-## License
+## 📄 License
 
 Proprietary. Source code is provided for transparency and audit purposes only. See [LICENSE](LICENSE) for details.
