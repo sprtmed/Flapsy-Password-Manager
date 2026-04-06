@@ -47,6 +47,7 @@ enum VaultPanel {
     case tags
     case settings
     case health
+    case pomodoro
     case trash
 }
 

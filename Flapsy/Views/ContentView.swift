@@ -192,6 +192,17 @@ struct VaultContainerView: View {
                         }
                         .buttonStyle(.plain)
 
+                        Button(action: { vault.navigateToPanel(.pomodoro) }) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(theme.accentBlue)
+                                .padding(.horizontal, compact ? 8 : 12)
+                                .padding(.vertical, 5)
+                                .background(theme.accentBlue.opacity(0.08))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+
                         Button(action: { vault.navigateToPanel(.settings) }) {
                             Text("\u{2699}")
                                 .font(.system(size: 16))
@@ -245,6 +256,8 @@ struct VaultContainerView: View {
             SettingsView()
         case .health:
             VaultHealthView()
+        case .pomodoro:
+            PomodoroView()
         case .trash:
             TrashView()
         }
@@ -258,6 +271,7 @@ struct VaultContainerView: View {
         case .tags: return "Categories"
         case .settings: return "Settings"
         case .health: return "Health"
+        case .pomodoro: return "Pomodoro"
         case .trash: return "Trash"
         }
     }
