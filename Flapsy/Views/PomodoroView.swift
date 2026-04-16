@@ -620,6 +620,7 @@ private struct BlockTimerView: View {
                             .cornerRadius(12)
                     }
                     .buttonStyle(.plain)
+                    .modifier(InviteButtonModifier(accent: theme.accentBlue))
                 }
 
             case .running:
@@ -932,5 +933,45 @@ private struct PulseModifier: ViewModifier {
             .opacity(isPulsing ? 0.5 : 1.0)
             .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
             .onAppear { isPulsing = true }
+    }
+}
+
+// MARK: - Invite Button (breathing scale + glow + shine)
+
+private struct InviteButtonModifier: ViewModifier {
+    let accent: Color
+    @State private var breathe = false
+    @State private var shineOffset: CGFloat = -1.5
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                GeometryReader { geo in
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.25), location: 0.5),
+                            .init(color: .clear, location: 1)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: geo.size.width * 0.35)
+                    .offset(x: geo.size.width * shineOffset)
+                    .blendMode(.plusLighter)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .allowsHitTesting(false)
+            )
+            .scaleEffect(breathe ? 1.03 : 1.0)
+            .shadow(color: accent.opacity(breathe ? 0.55 : 0.15), radius: breathe ? 14 : 4, y: 2)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
+                    breathe = true
+                }
+                withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: false)) {
+                    shineOffset = 1.5
+                }
+            }
     }
 }
