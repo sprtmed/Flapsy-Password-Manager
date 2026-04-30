@@ -6,10 +6,12 @@ struct LockScreenView: View {
     @Environment(\.theme) var theme
 
     @FocusState private var isPasswordFocused: Bool
+    @State private var biometricAvailableAndEnabled: Bool = false
 
-    private var biometricAvailableAndEnabled: Bool {
-        BiometricService.shared.isBiometricAvailable &&
-        KeychainService.biometricEnabledFlag
+    private func refreshBiometricAvailability() {
+        biometricAvailableAndEnabled =
+            BiometricService.shared.isBiometricAvailable &&
+            KeychainService.biometricEnabledFlag
     }
 
     var body: some View {
@@ -345,13 +347,24 @@ struct LockScreenView: View {
             }
         }
         .onAppear {
+            refreshBiometricAvailability()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 isPasswordFocused = true
             }
+            // Re-check availability — LAContext can briefly return false right after
+            // wake/popover-open while the biometric subsystem is still coming online.
+            for delay in [0.15, 0.4, 0.8, 1.5] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    refreshBiometricAvailability()
+                }
+            }
             // Auto-trigger Touch ID if enabled
-            if biometricAvailableAndEnabled {
+            if BiometricService.shared.isBiometricAvailable && KeychainService.biometricEnabledFlag {
                 vault.attemptBiometricUnlock()
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            refreshBiometricAvailability()
         }
     }
 

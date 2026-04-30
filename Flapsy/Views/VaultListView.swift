@@ -36,7 +36,12 @@ struct VaultListView: View {
                 .frame(width: 0, height: 0)
                 .opacity(0)
         }
-        .onAppear { installKeyMonitor() }
+        .onAppear {
+            installKeyMonitor()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isSearchFieldFocused = true
+            }
+        }
         .onDisappear { removeKeyMonitor() }
         .onChange(of: vault.isSearchFocused) { focused in
             if focused {
