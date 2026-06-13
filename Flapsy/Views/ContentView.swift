@@ -106,7 +106,7 @@ struct VaultContainerView: View {
                 Spacer()
                 HStack(spacing: 4) {
                     if vault.currentPanel != .list {
-                        Button(action: { vault.navigateToPanel(.list) }) {
+                        Button(action: { vault.navigateToPanel(vault.currentPanel == .noteTags ? .notes : .list) }) {
                             HStack(spacing: 4) {
                                 Text("\u{2190}")
                                     .font(.system(size: 11))
@@ -281,6 +281,8 @@ struct VaultContainerView: View {
             PomodoroView()
         case .notes:
             NotesView()
+        case .noteTags:
+            NoteTagManagerView()
         case .trash:
             TrashView()
         }
@@ -296,6 +298,7 @@ struct VaultContainerView: View {
         case .health: return "Health"
         case .pomodoro: return "Pomodoro"
         case .notes: return "Notes"
+        case .noteTags: return "Tags"
         case .trash: return "Trash"
         }
     }

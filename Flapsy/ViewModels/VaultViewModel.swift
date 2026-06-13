@@ -49,6 +49,7 @@ enum VaultPanel {
     case health
     case pomodoro
     case notes
+    case noteTags
     case trash
 }
 
@@ -1102,6 +1103,16 @@ final class VaultViewModel: ObservableObject {
             notes[idx].tag = nil
         }
         if activeNoteTag == key { activeNoteTag = "all" }
+    }
+
+    func updateNoteTag(key: String, newLabel: String, newColor: String) {
+        guard let idx = noteTags.firstIndex(where: { $0.key == key }) else { return }
+        noteTags[idx].label = newLabel
+        noteTags[idx].color = newColor
+    }
+
+    func noteTagHasNotes(_ key: String) -> Bool {
+        notes.contains { $0.tag == key }
     }
 
     /// Updates a note's body and bumps its modified date. Triggers autosave.

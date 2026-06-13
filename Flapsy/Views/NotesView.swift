@@ -8,8 +8,6 @@ struct NotesView: View {
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
     @FocusState private var listSearchFocused: Bool
-    @FocusState private var addTagFocused: Bool
-    @State private var showAddTag = false
 
     var body: some View {
         Group {
@@ -32,10 +30,6 @@ struct NotesView: View {
             }
 
             tagFilterRow
-
-            if showAddTag {
-                addTagForm
-            }
 
             if vault.noteEntries.isEmpty {
                 emptyState
@@ -175,19 +169,9 @@ struct NotesView: View {
                         vault.activeNoteTag = tag.key
                         vault.showNoteFavoritesOnly = false
                     }
-                    .contextMenu {
-                        Button(role: .destructive) {
-                            vault.removeNoteTag(tag.key)
-                        } label: {
-                            Label("Delete Tag", systemImage: "trash")
-                        }
-                    }
                 }
 
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.15)) { showAddTag.toggle() }
-                    if showAddTag { addTagFocused = true }
-                }) {
+                Button(action: { vault.navigateToPanel(.noteTags) }) {
                     Text("\u{FF0B}")
                         .font(.system(size: 13))
                         .foregroundColor(theme.textFaint)
@@ -195,61 +179,11 @@ struct NotesView: View {
                         .padding(.vertical, 5)
                 }
                 .buttonStyle(.plain)
-                .help("Add tag")
+                .help("Manage tags")
             }
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 6)
-    }
-
-    private var addTagForm: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                TextField("New tag name\u{2026}", text: $vault.newNoteTagName)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13, design: .monospaced))
-                    .foregroundColor(theme.text)
-                    .focused($addTagFocused)
-                    .onSubmit { commitNewTag() }
-                    .padding(8)
-                    .background(theme.inputBg)
-                    .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(theme.inputBorder, lineWidth: 1))
-
-                Button(action: { commitNewTag() }) {
-                    Text("Add")
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(theme.accentBlue)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-                .disabled(vault.newNoteTagName.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(VaultCategory.availableColors, id: \.self) { hex in
-                        Circle()
-                            .fill(Color(hex: hex))
-                            .frame(width: 18, height: 18)
-                            .overlay(
-                                Circle().stroke(theme.text, lineWidth: vault.newNoteTagColor == hex ? 2 : 0)
-                            )
-                            .onTapGesture { vault.newNoteTagColor = hex }
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
-    }
-
-    private func commitNewTag() {
-        vault.addNoteTag()
-        withAnimation(.easeInOut(duration: 0.15)) { showAddTag = false }
     }
 
     private var emptyState: some View {
