@@ -44,6 +44,8 @@ final class ImportService {
         /// Standalone Notes-app notes recovered from a .knox backup (empty for
         /// CSV/JSON imports, which have no concept of app notes).
         var appNotes: [Note] = []
+        /// Note tags recovered from a .knox backup.
+        var appNoteTags: [VaultCategory] = []
 
         var loginCount: Int { items.filter { $0.type == .login }.count }
         var cardCount: Int { items.filter { $0.type == .card }.count }
@@ -493,7 +495,7 @@ final class ImportService {
             throw ImportError.parseError("Could not decode backup data")
         }
 
-        return ImportResult(items: vaultData.items, format: .knoxBackup, appNotes: vaultData.notes)
+        return ImportResult(items: vaultData.items, format: .knoxBackup, appNotes: vaultData.notes, appNoteTags: vaultData.noteTags)
     }
 
     // MARK: - Duplicate Detection

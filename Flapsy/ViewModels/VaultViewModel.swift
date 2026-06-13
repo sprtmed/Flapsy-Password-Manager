@@ -111,9 +111,14 @@ final class VaultViewModel: ObservableObject {
 
     // MARK: - Notes (standalone Notes mini-app)
     @Published var notes: [Note] = []
+    @Published var noteTags: [VaultCategory] = []
     @Published var selectedNoteID: UUID? = nil
     @Published var noteSearchText: String = ""
     @Published var showNoteSearch: Bool = false
+    @Published var activeNoteTag: String = "all"
+    @Published var showNoteFavoritesOnly: Bool = false
+    @Published var newNoteTagName: String = ""
+    @Published var newNoteTagColor: String = VaultCategory.availableColors[0]
 
     // MARK: - Search & Filters
     @Published var searchText: String = ""
@@ -547,6 +552,7 @@ final class VaultViewModel: ObservableObject {
                     self.items = vaultData.items
                     self.categories = vaultData.categories
                     self.notes = vaultData.notes
+                    self.noteTags = vaultData.noteTags
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -607,6 +613,7 @@ final class VaultViewModel: ObservableObject {
                     self.items = vaultData.items
                     self.categories = vaultData.categories
                     self.notes = vaultData.notes
+                    self.noteTags = vaultData.noteTags
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -699,6 +706,7 @@ final class VaultViewModel: ObservableObject {
                     self.items = vaultData.items
                     self.categories = vaultData.categories
                     self.notes = vaultData.notes
+                    self.noteTags = vaultData.noteTags
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -808,9 +816,12 @@ final class VaultViewModel: ObservableObject {
         items = []
         categories = []
         notes = []
+        noteTags = []
         selectedNoteID = nil
         noteSearchText = ""
         showNoteSearch = false
+        activeNoteTag = "all"
+        showNoteFavoritesOnly = false
         masterPasswordInput = ""
 
         // Clear sensitive add-new fields
@@ -867,7 +878,7 @@ final class VaultViewModel: ObservableObject {
         guard isUnlocked, encryption.hasKey else { return }
 
         let settings = settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-        let vault = VaultData(items: items, categories: categories, settings: settings, notes: notes)
+        let vault = VaultData(items: items, categories: categories, settings: settings, notes: notes, noteTags: noteTags)
 
         do {
             try storage.saveVault(vault)
@@ -879,10 +890,11 @@ final class VaultViewModel: ObservableObject {
     private func setupAutoSave() {
         autoSaveDebounce?.cancel()
 
-        autoSaveDebounce = Publishers.Merge3(
+        autoSaveDebounce = Publishers.Merge4(
             $items.map { _ in () },
             $categories.map { _ in () },
-            $notes.map { _ in () }
+            $notes.map { _ in () },
+            $noteTags.map { _ in () }
         )
         .dropFirst()
         .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
@@ -986,9 +998,24 @@ final class VaultViewModel: ObservableObject {
 
     // MARK: - Notes (standalone Notes mini-app)
 
-    /// Notes filtered by the in-app search bar and sorted newest-edited first.
+    /// Notes after applying the active tag + favorites filters, sorted with
+    /// starred notes pinned to the top, then newest-edited first.
+    private var sortedVisibleNotes: [Note] {
+        notes
+            .filter { note in
+                let matchesTag = activeNoteTag == "all" || note.tag == activeNoteTag
+                let matchesFavorite = !showNoteFavoritesOnly || note.isFavorite
+                return matchesTag && matchesFavorite
+            }
+            .sorted { a, b in
+                if a.isFavorite != b.isFavorite { return a.isFavorite }
+                return a.modifiedAt > b.modifiedAt
+            }
+    }
+
+    /// Notes filtered by the in-app search bar, tag, and favorites.
     var filteredNotes: [Note] {
-        let sorted = notes.sorted { $0.modifiedAt > $1.modifiedAt }
+        let sorted = sortedVisibleNotes
         let query = noteSearchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !query.isEmpty else { return sorted }
         return sorted.filter { $0.body.lowercased().contains(query) }
@@ -998,7 +1025,7 @@ final class VaultViewModel: ObservableObject {
     /// snippet of text around the first match (with the matched substring
     /// isolated for highlighting); otherwise it carries the usual preview line.
     var noteEntries: [NoteListEntry] {
-        let sorted = notes.sorted { $0.modifiedAt > $1.modifiedAt }
+        let sorted = sortedVisibleNotes
         let query = noteSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
             return sorted.map { NoteListEntry(note: $0, prefix: $0.previewSubtitle, match: "", suffix: "") }
@@ -1030,12 +1057,51 @@ final class VaultViewModel: ObservableObject {
     }
 
     /// Creates a blank note, selects it, and returns its id so the editor can focus it.
+    /// Inherits the currently-filtered tag (if any) so new notes land where you're looking.
     @discardableResult
     func addNote() -> UUID {
-        let note = Note()
+        let inheritedTag = activeNoteTag == "all" ? nil : activeNoteTag
+        let note = Note(tag: inheritedTag)
         notes.insert(note, at: 0)
         selectedNoteID = note.id
         return note.id
+    }
+
+    func toggleNoteFavorite(_ id: UUID) {
+        guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
+        notes[idx].isFavorite.toggle()
+        notes[idx].modifiedAt = Date()
+    }
+
+    /// Assigns (or clears, with nil) a note's tag.
+    func setNoteTag(_ id: UUID, tag: String?) {
+        guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
+        notes[idx].tag = tag
+        notes[idx].modifiedAt = Date()
+    }
+
+    func noteTagFor(key: String) -> VaultCategory? {
+        noteTags.first { $0.key == key }
+    }
+
+    /// Adds a new note tag from `newNoteTagName`/`newNoteTagColor`, then resets the inputs.
+    func addNoteTag() {
+        let trimmed = newNoteTagName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        let key = trimmed.lowercased().replacingOccurrences(of: " ", with: "_")
+        guard !noteTags.contains(where: { $0.key == key }) else { return }
+        noteTags.append(VaultCategory(key: key, label: trimmed, color: newNoteTagColor))
+        newNoteTagName = ""
+        newNoteTagColor = VaultCategory.availableColors[0]
+    }
+
+    /// Removes a note tag and clears it from any notes that used it.
+    func removeNoteTag(_ key: String) {
+        noteTags.removeAll { $0.key == key }
+        for idx in notes.indices where notes[idx].tag == key {
+            notes[idx].tag = nil
+        }
+        if activeNoteTag == key { activeNoteTag = "all" }
     }
 
     /// Updates a note's body and bumps its modified date. Triggers autosave.
@@ -1415,6 +1481,16 @@ final class VaultViewModel: ObservableObject {
     func confirmImport() {
         guard let preview = importPreview, !preview.items.isEmpty || !preview.appNotes.isEmpty else { return }
 
+        // Merge note tags first (so imported notes keep their tag), skipping
+        // any tag key that already exists.
+        if !preview.appNoteTags.isEmpty {
+            let existingTagKeys = Set(noteTags.map(\.key))
+            let freshTags = preview.appNoteTags.filter { !existingTagKeys.contains($0.key) }
+            if !freshTags.isEmpty {
+                noteTags.append(contentsOf: freshTags)
+            }
+        }
+
         // Merge standalone Notes-app notes (from .knox backups), skipping
         // any whose id already exists so re-importing your own backup is safe.
         if !preview.appNotes.isEmpty {
@@ -1534,7 +1610,7 @@ final class VaultViewModel: ObservableObject {
         guard let url = ExportService.shared.showSavePanel(format: .encryptedBackup) else { return }
 
         let settings = settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-        let vaultData = VaultData(items: activeItems, categories: categories, settings: settings, notes: notes)
+        let vaultData = VaultData(items: activeItems, categories: categories, settings: settings, notes: notes, noteTags: noteTags)
 
         isExporting = true
         exportError = ""
@@ -1682,6 +1758,7 @@ final class VaultViewModel: ObservableObject {
                     self.items = vaultData.items
                     self.categories = vaultData.categories
                     self.notes = vaultData.notes
+                    self.noteTags = vaultData.noteTags
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.currentScreen = .vault
@@ -1822,7 +1899,7 @@ final class VaultViewModel: ObservableObject {
                 try self.storage.writeSalt(newSalt)
 
                 let settings = self.settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-                let vault = VaultData(items: self.items, categories: self.categories, settings: settings, notes: self.notes)
+                let vault = VaultData(items: self.items, categories: self.categories, settings: settings, notes: self.notes, noteTags: self.noteTags)
                 try self.storage.saveVault(vault)
 
                 // Always invalidate old biometric key on password change.
@@ -1879,9 +1956,12 @@ final class VaultViewModel: ObservableObject {
         items = []
         categories = []
         notes = []
+        noteTags = []
         selectedNoteID = nil
         noteSearchText = ""
         showNoteSearch = false
+        activeNoteTag = "all"
+        showNoteFavoritesOnly = false
         selectedItemID = nil
         searchText = ""
         activeCategory = "all"
@@ -1931,9 +2011,12 @@ final class VaultViewModel: ObservableObject {
         items = []
         categories = []
         notes = []
+        noteTags = []
         selectedNoteID = nil
         noteSearchText = ""
         showNoteSearch = false
+        activeNoteTag = "all"
+        showNoteFavoritesOnly = false
         selectedItemID = nil
         searchText = ""
         activeCategory = "all"

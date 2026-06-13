@@ -19,15 +19,38 @@ struct Note: Codable, Identifiable {
     /// `nil` for notes created before rich text existed — they render from `body`.
     /// Optional, so older vaults decode without it (synthesized Codable → nil).
     var rtfData: Data?
+    /// Starred notes are pinned to the top of the list.
+    var isFavorite: Bool
+    /// Key of the note's tag (matches a `VaultCategory.key` in `VaultData.noteTags`).
+    /// `nil` = untagged.
+    var tag: String?
     var createdAt: Date
     var modifiedAt: Date
 
-    init(id: UUID = UUID(), body: String = "", rtfData: Data? = nil, createdAt: Date = Date(), modifiedAt: Date = Date()) {
+    init(id: UUID = UUID(), body: String = "", rtfData: Data? = nil, isFavorite: Bool = false, tag: String? = nil, createdAt: Date = Date(), modifiedAt: Date = Date()) {
         self.id = id
         self.body = body
         self.rtfData = rtfData
+        self.isFavorite = isFavorite
+        self.tag = tag
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
+    }
+
+    // Custom decoder so notes saved before favorites/tags existed still decode.
+    enum CodingKeys: String, CodingKey {
+        case id, body, rtfData, isFavorite, tag, createdAt, modifiedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        body = try c.decode(String.self, forKey: .body)
+        rtfData = try c.decodeIfPresent(Data.self, forKey: .rtfData)
+        isFavorite = try c.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+        tag = try c.decodeIfPresent(String.self, forKey: .tag)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        modifiedAt = try c.decode(Date.self, forKey: .modifiedAt)
     }
 
     /// First non-empty line of the note, trimmed. Used as the list label.

@@ -8,6 +8,8 @@ struct NotesView: View {
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
     @FocusState private var listSearchFocused: Bool
+    @FocusState private var addTagFocused: Bool
+    @State private var showAddTag = false
 
     var body: some View {
         Group {
@@ -27,6 +29,12 @@ struct NotesView: View {
 
             if vault.showNoteSearch {
                 searchBar
+            }
+
+            tagFilterRow
+
+            if showAddTag {
+                addTagForm
             }
 
             if vault.noteEntries.isEmpty {
@@ -135,6 +143,115 @@ struct NotesView: View {
         .padding(.bottom, 8)
     }
 
+    private var tagFilterRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 2) {
+                FilterPill(title: "All", isActive: vault.activeNoteTag == "all" && !vault.showNoteFavoritesOnly) {
+                    vault.activeNoteTag = "all"
+                    vault.showNoteFavoritesOnly = false
+                }
+
+                Button(action: {
+                    vault.showNoteFavoritesOnly.toggle()
+                    if vault.showNoteFavoritesOnly { vault.activeNoteTag = "all" }
+                }) {
+                    Text(vault.showNoteFavoritesOnly ? "\u{2605}" : "\u{2606}")
+                        .font(.system(size: 13))
+                        .foregroundColor(vault.showNoteFavoritesOnly ? Color(hex: "fbbf24") : theme.textMuted)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(vault.showNoteFavoritesOnly ? theme.pillBg : Color.clear)
+                        .cornerRadius(20)
+                }
+                .buttonStyle(.plain)
+                .help("Favorites only")
+
+                ForEach(vault.noteTags) { tag in
+                    CategoryPill(
+                        label: tag.label,
+                        colorHex: tag.color,
+                        isActive: vault.activeNoteTag == tag.key
+                    ) {
+                        vault.activeNoteTag = tag.key
+                        vault.showNoteFavoritesOnly = false
+                    }
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            vault.removeNoteTag(tag.key)
+                        } label: {
+                            Label("Delete Tag", systemImage: "trash")
+                        }
+                    }
+                }
+
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.15)) { showAddTag.toggle() }
+                    if showAddTag { addTagFocused = true }
+                }) {
+                    Text("\u{FF0B}")
+                        .font(.system(size: 13))
+                        .foregroundColor(theme.textFaint)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                }
+                .buttonStyle(.plain)
+                .help("Add tag")
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 6)
+    }
+
+    private var addTagForm: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                TextField("New tag name\u{2026}", text: $vault.newNoteTagName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundColor(theme.text)
+                    .focused($addTagFocused)
+                    .onSubmit { commitNewTag() }
+                    .padding(8)
+                    .background(theme.inputBg)
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(theme.inputBorder, lineWidth: 1))
+
+                Button(action: { commitNewTag() }) {
+                    Text("Add")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(theme.accentBlue)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .disabled(vault.newNoteTagName.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(VaultCategory.availableColors, id: \.self) { hex in
+                        Circle()
+                            .fill(Color(hex: hex))
+                            .frame(width: 18, height: 18)
+                            .overlay(
+                                Circle().stroke(theme.text, lineWidth: vault.newNoteTagColor == hex ? 2 : 0)
+                            )
+                            .onTapGesture { vault.newNoteTagColor = hex }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
+    private func commitNewTag() {
+        vault.addNoteTag()
+        withAnimation(.easeInOut(duration: 0.15)) { showAddTag = false }
+    }
+
     private var emptyState: some View {
         VStack(spacing: 10) {
             Spacer()
@@ -176,21 +293,38 @@ private struct NoteRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(note.displayTitle)
-                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                    .foregroundColor(theme.text)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                HStack(spacing: 6) {
+                    if let key = note.tag, let tag = vault.noteTagFor(key: key) {
+                        Circle()
+                            .fill(Color(hex: tag.color))
+                            .frame(width: 8, height: 8)
+                    }
+                    Text(note.displayTitle)
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundColor(theme.text)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
 
                 secondaryLine
             }
 
             Spacer(minLength: 8)
 
-            Text(note.dateDisplay)
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundColor(theme.textFaint)
-                .fixedSize()
+            VStack(alignment: .trailing, spacing: 6) {
+                Button(action: { vault.toggleNoteFavorite(note.id) }) {
+                    Text(note.isFavorite ? "\u{2605}" : "\u{2606}")
+                        .font(.system(size: 14))
+                        .foregroundColor(note.isFavorite ? Color(hex: "fbbf24") : theme.textFaint)
+                }
+                .buttonStyle(.plain)
+                .help(note.isFavorite ? "Unstar" : "Star")
+
+                Text(note.dateDisplay)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(theme.textFaint)
+                    .fixedSize()
+            }
         }
         .padding(.vertical, 11)
         .padding(.horizontal, 16)
@@ -264,6 +398,20 @@ private struct NoteEditorView: View {
                     .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
+
+                Button(action: { vault.toggleNoteFavorite(noteID) }) {
+                    Text((note?.isFavorite ?? false) ? "\u{2605}" : "\u{2606}")
+                        .font(.system(size: 14))
+                        .foregroundColor((note?.isFavorite ?? false) ? Color(hex: "fbbf24") : theme.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(theme.fieldBg)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .help((note?.isFavorite ?? false) ? "Unstar" : "Star")
+
+                tagMenu
 
                 Spacer()
 
@@ -339,6 +487,40 @@ private struct NoteEditorView: View {
             controller.clearSearch()
             vault.discardNoteIfEmpty(noteID)
         }
+    }
+
+    private var tagMenu: some View {
+        let current = note?.tag.flatMap { vault.noteTagFor(key: $0) }
+        return Menu {
+            Button(action: { vault.setNoteTag(noteID, tag: nil) }) {
+                if note?.tag == nil { Label("None", systemImage: "checkmark") } else { Text("None") }
+            }
+            ForEach(vault.noteTags) { tag in
+                Button(action: { vault.setNoteTag(noteID, tag: tag.key) }) {
+                    if note?.tag == tag.key { Label(tag.label, systemImage: "checkmark") } else { Text(tag.label) }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if let current = current {
+                    Circle().fill(Color(hex: current.color)).frame(width: 7, height: 7)
+                    Text(current.label)
+                } else {
+                    Image(systemName: "tag")
+                    Text("Tag")
+                }
+            }
+            .font(.system(size: 11, design: .monospaced))
+            .foregroundColor(current == nil ? theme.textSecondary : theme.accentBlueLt)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(theme.fieldBg)
+            .cornerRadius(6)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Tag this note")
     }
 
     private var inNoteSearchBar: some View {
