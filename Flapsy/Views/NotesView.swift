@@ -316,68 +316,74 @@ private struct NoteEditorView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Internal toolbar: back to the notes list + delete
-            HStack(spacing: 8) {
-                Button(action: { leaveEditor() }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text("Notes")
-                            .font(.system(size: 12, design: .monospaced))
+            // Internal toolbar: back to the notes list + actions.
+            // Collapses the Back label to an icon-only button when the popover
+            // is narrow so nothing wraps.
+            GeometryReader { geo in
+                let compact = geo.size.width < 380
+                HStack(spacing: 8) {
+                    Button(action: { leaveEditor() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 11, weight: .semibold))
+                            if !compact {
+                                Text("Notes")
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .fixedSize()
+                            }
+                        }
+                        .foregroundColor(theme.textSecondary)
+                        .padding(.horizontal, compact ? 8 : 10)
+                        .padding(.vertical, 5)
+                        .background(theme.fieldBg)
+                        .cornerRadius(6)
                     }
-                    .foregroundColor(theme.textSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(theme.fieldBg)
-                    .cornerRadius(6)
+                    .buttonStyle(.plain)
+                    .help("Back to notes")
+
+                    Button(action: { vault.toggleNoteFavorite(noteID) }) {
+                        Text((note?.isFavorite ?? false) ? "\u{2605}" : "\u{2606}")
+                            .font(.system(size: 14))
+                            .foregroundColor((note?.isFavorite ?? false) ? Color(hex: "fbbf24") : theme.textSecondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(theme.fieldBg)
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help((note?.isFavorite ?? false) ? "Unstar" : "Star")
+
+                    tagMenu
+
+                    Spacer()
+
+                    Button(action: { toggleInNoteSearch() }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 12))
+                            .foregroundColor(showInNoteSearch ? theme.accentBlueLt : theme.textSecondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(showInNoteSearch ? theme.pillBg : theme.fieldBg)
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Find in note")
+
+                    Button(action: { vault.deleteNote(noteID) }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12))
+                            .foregroundColor(theme.accentRed)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(theme.fieldBg)
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete note")
                 }
-                .buttonStyle(.plain)
-
-                Button(action: { vault.toggleNoteFavorite(noteID) }) {
-                    Text((note?.isFavorite ?? false) ? "\u{2605}" : "\u{2606}")
-                        .font(.system(size: 14))
-                        .foregroundColor((note?.isFavorite ?? false) ? Color(hex: "fbbf24") : theme.textSecondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(theme.fieldBg)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-                .help((note?.isFavorite ?? false) ? "Unstar" : "Star")
-
-                tagMenu
-
-                Spacer()
-
-                Text(note?.dateDisplay ?? "")
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(theme.textGhost)
-
-                Button(action: { toggleInNoteSearch() }) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 12))
-                        .foregroundColor(showInNoteSearch ? theme.accentBlueLt : theme.textSecondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(showInNoteSearch ? theme.pillBg : theme.fieldBg)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-                .help("Find in note")
-
-                Button(action: { vault.deleteNote(noteID) }) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 12))
-                        .foregroundColor(theme.accentRed)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(theme.fieldBg)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-                .help("Delete note")
+                .padding(.horizontal, 16)
             }
-            .padding(.horizontal, 16)
+            .frame(height: 30)
             .padding(.top, 10)
             .padding(.bottom, 8)
 
@@ -400,16 +406,27 @@ private struct NoteEditorView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Subtle, toolbar-free formatting hint
-            Text("\u{2318}B bold \u{00B7} \u{2318}I italic \u{00B7} start a line with \u{201C}- \u{201D} for a bullet \u{00B7} links are automatic")
-                .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(theme.textGhost)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(alignment: .top) {
-                    Rectangle().fill(theme.cardBorder).frame(height: 1)
+            // Subtle, toolbar-free formatting hint + last-edited time.
+            // The hint truncates if space is tight; the time never wraps.
+            HStack(spacing: 6) {
+                Text("\u{2318}B bold \u{00B7} \u{2318}I italic \u{00B7} start a line with \u{201C}- \u{201D} for a bullet \u{00B7} links are automatic")
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .layoutPriority(0)
+                if let date = note?.dateDisplay, !date.isEmpty {
+                    Text("\u{00B7} \(date)")
+                        .fixedSize()
+                        .layoutPriority(1)
                 }
+                Spacer(minLength: 0)
+            }
+            .font(.system(size: 9, design: .monospaced))
+            .foregroundColor(theme.textGhost)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+            .overlay(alignment: .top) {
+                Rectangle().fill(theme.cardBorder).frame(height: 1)
+            }
         }
         .onChange(of: inNoteQuery) { query in
             controller.runSearch(query)
