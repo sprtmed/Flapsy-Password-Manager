@@ -48,6 +48,7 @@ enum VaultPanel {
     case settings
     case health
     case pomodoro
+    case notes
     case trash
 }
 
@@ -95,6 +96,12 @@ final class VaultViewModel: ObservableObject {
     // MARK: - Vault Data
     @Published var items: [VaultItem] = []
     @Published var categories: [VaultCategory] = []
+
+    // MARK: - Notes (standalone Notes mini-app)
+    @Published var notes: [Note] = []
+    @Published var selectedNoteID: UUID? = nil
+    @Published var noteSearchText: String = ""
+    @Published var showNoteSearch: Bool = false
 
     // MARK: - Search & Filters
     @Published var searchText: String = ""
@@ -527,6 +534,7 @@ final class VaultViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     self.items = vaultData.items
                     self.categories = vaultData.categories
+                    self.notes = vaultData.notes
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -586,6 +594,7 @@ final class VaultViewModel: ObservableObject {
                     BruteForceState.lockoutEndDate = nil
                     self.items = vaultData.items
                     self.categories = vaultData.categories
+                    self.notes = vaultData.notes
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -677,6 +686,7 @@ final class VaultViewModel: ObservableObject {
                     self.failedAttempts = 0
                     self.items = vaultData.items
                     self.categories = vaultData.categories
+                    self.notes = vaultData.notes
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -785,6 +795,10 @@ final class VaultViewModel: ObservableObject {
 
         items = []
         categories = []
+        notes = []
+        selectedNoteID = nil
+        noteSearchText = ""
+        showNoteSearch = false
         masterPasswordInput = ""
 
         // Clear sensitive add-new fields
@@ -841,7 +855,7 @@ final class VaultViewModel: ObservableObject {
         guard isUnlocked, encryption.hasKey else { return }
 
         let settings = settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-        let vault = VaultData(items: items, categories: categories, settings: settings)
+        let vault = VaultData(items: items, categories: categories, settings: settings, notes: notes)
 
         do {
             try storage.saveVault(vault)
@@ -853,9 +867,10 @@ final class VaultViewModel: ObservableObject {
     private func setupAutoSave() {
         autoSaveDebounce?.cancel()
 
-        autoSaveDebounce = Publishers.Merge(
+        autoSaveDebounce = Publishers.Merge3(
             $items.map { _ in () },
-            $categories.map { _ in () }
+            $categories.map { _ in () },
+            $notes.map { _ in () }
         )
         .dropFirst()
         .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
@@ -952,6 +967,52 @@ final class VaultViewModel: ObservableObject {
             resetNewItem()
             newType = typeFilter ?? .login
         }
+        if panel != .notes {
+            selectedNoteID = nil
+        }
+    }
+
+    // MARK: - Notes (standalone Notes mini-app)
+
+    /// Notes filtered by the in-app search bar and sorted newest-edited first.
+    var filteredNotes: [Note] {
+        let sorted = notes.sorted { $0.modifiedAt > $1.modifiedAt }
+        let query = noteSearchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return sorted }
+        return sorted.filter { $0.body.lowercased().contains(query) }
+    }
+
+    var selectedNote: Note? {
+        guard let id = selectedNoteID else { return nil }
+        return notes.first { $0.id == id }
+    }
+
+    /// Creates a blank note, selects it, and returns its id so the editor can focus it.
+    @discardableResult
+    func addNote() -> UUID {
+        let note = Note()
+        notes.insert(note, at: 0)
+        selectedNoteID = note.id
+        return note.id
+    }
+
+    /// Updates a note's body and bumps its modified date. Triggers autosave.
+    func updateNoteBody(_ id: UUID, body: String) {
+        guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
+        guard notes[idx].body != body else { return }
+        notes[idx].body = body
+        notes[idx].modifiedAt = Date()
+    }
+
+    func deleteNote(_ id: UUID) {
+        notes.removeAll { $0.id == id }
+        if selectedNoteID == id { selectedNoteID = nil }
+    }
+
+    /// Discards a note if the user opened a fresh blank one and never typed anything.
+    func discardNoteIfEmpty(_ id: UUID) {
+        guard let note = notes.first(where: { $0.id == id }), note.isEffectivelyEmpty else { return }
+        deleteNote(id)
     }
 
     // MARK: - Category Management
@@ -1299,7 +1360,30 @@ final class VaultViewModel: ObservableObject {
     }
 
     func confirmImport() {
-        guard let preview = importPreview, !preview.items.isEmpty else { return }
+        guard let preview = importPreview, !preview.items.isEmpty || !preview.appNotes.isEmpty else { return }
+
+        // Merge standalone Notes-app notes (from .knox backups), skipping
+        // any whose id already exists so re-importing your own backup is safe.
+        if !preview.appNotes.isEmpty {
+            let existingNoteIDs = Set(notes.map(\.id))
+            let freshNotes = preview.appNotes.filter { !existingNoteIDs.contains($0.id) }
+            if !freshNotes.isEmpty {
+                notes.insert(contentsOf: freshNotes, at: 0)
+            }
+        }
+
+        // If the backup contained only notes (no items), finish here.
+        guard !preview.items.isEmpty else {
+            showImportPreview = false
+            importPreview = nil
+            _pendingImportURL = nil
+            exportPasswordInput = ""
+            settingsViewModel?.showImportSuccess = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.settingsViewModel?.showImportSuccess = false
+            }
+            return
+        }
 
         isImporting = true
         importProgress = "Deduplicating\u{2026}"
@@ -1397,7 +1481,7 @@ final class VaultViewModel: ObservableObject {
         guard let url = ExportService.shared.showSavePanel(format: .encryptedBackup) else { return }
 
         let settings = settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-        let vaultData = VaultData(items: activeItems, categories: categories, settings: settings)
+        let vaultData = VaultData(items: activeItems, categories: categories, settings: settings, notes: notes)
 
         isExporting = true
         exportError = ""
@@ -1544,6 +1628,7 @@ final class VaultViewModel: ObservableObject {
                     let vaultData = try self.storage.unlockVault(withKeyData: keyData)
                     self.items = vaultData.items
                     self.categories = vaultData.categories
+                    self.notes = vaultData.notes
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.currentScreen = .vault
@@ -1684,7 +1769,7 @@ final class VaultViewModel: ObservableObject {
                 try self.storage.writeSalt(newSalt)
 
                 let settings = self.settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-                let vault = VaultData(items: self.items, categories: self.categories, settings: settings)
+                let vault = VaultData(items: self.items, categories: self.categories, settings: settings, notes: self.notes)
                 try self.storage.saveVault(vault)
 
                 // Always invalidate old biometric key on password change.
@@ -1740,6 +1825,10 @@ final class VaultViewModel: ObservableObject {
         // Clear all in-memory vault state
         items = []
         categories = []
+        notes = []
+        selectedNoteID = nil
+        noteSearchText = ""
+        showNoteSearch = false
         selectedItemID = nil
         searchText = ""
         activeCategory = "all"
@@ -1788,6 +1877,10 @@ final class VaultViewModel: ObservableObject {
         // Clear in-memory state
         items = []
         categories = []
+        notes = []
+        selectedNoteID = nil
+        noteSearchText = ""
+        showNoteSearch = false
         selectedItemID = nil
         searchText = ""
         activeCategory = "all"

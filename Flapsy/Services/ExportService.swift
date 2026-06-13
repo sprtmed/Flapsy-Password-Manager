@@ -66,7 +66,7 @@ final class ExportService {
     ///
     /// Key derivation: Argon2id(password, salt) → 256-bit AES key
     func exportEncryptedBackup(vault: VaultData, password: String, to url: URL) throws {
-        guard !vault.items.isEmpty else { throw ExportError.noItems }
+        guard !vault.items.isEmpty || !vault.notes.isEmpty else { throw ExportError.noItems }
 
         // Generate a fresh salt
         let salt = EncryptionService.shared.generateSalt(byteCount: 32)

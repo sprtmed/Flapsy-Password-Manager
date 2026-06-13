@@ -218,6 +218,18 @@ struct VaultContainerView: View {
                         }
                         .buttonStyle(.plain)
 
+                        Button(action: { vault.navigateToPanel(.notes) }) {
+                            Image(systemName: "note.text")
+                                .font(.system(size: 12))
+                                .foregroundColor(theme.accentYellow)
+                                .padding(.horizontal, compact ? 8 : 12)
+                                .padding(.vertical, 5)
+                                .background(theme.accentYellow.opacity(0.08))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Notes")
+
                         Button(action: { vault.navigateToPanel(.settings) }) {
                             Text("\u{2699}")
                                 .font(.system(size: 16))
@@ -267,6 +279,8 @@ struct VaultContainerView: View {
             VaultHealthView()
         case .pomodoro:
             PomodoroView()
+        case .notes:
+            NotesView()
         case .trash:
             TrashView()
         }
@@ -281,6 +295,7 @@ struct VaultContainerView: View {
         case .settings: return "Settings"
         case .health: return "Health"
         case .pomodoro: return "Pomodoro"
+        case .notes: return "Notes"
         case .trash: return "Trash"
         }
     }

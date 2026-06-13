@@ -41,10 +41,14 @@ final class ImportService {
     struct ImportResult {
         var items: [VaultItem] = []
         var format: ImportFormat = .genericCSV
+        /// Standalone Notes-app notes recovered from a .knox backup (empty for
+        /// CSV/JSON imports, which have no concept of app notes).
+        var appNotes: [Note] = []
 
         var loginCount: Int { items.filter { $0.type == .login }.count }
         var cardCount: Int { items.filter { $0.type == .card }.count }
         var noteCount: Int { items.filter { $0.type == .note }.count }
+        var appNoteCount: Int { appNotes.count }
         var totalCount: Int { items.count }
     }
 
@@ -489,7 +493,7 @@ final class ImportService {
             throw ImportError.parseError("Could not decode backup data")
         }
 
-        return ImportResult(items: vaultData.items, format: .knoxBackup)
+        return ImportResult(items: vaultData.items, format: .knoxBackup, appNotes: vaultData.notes)
     }
 
     // MARK: - Duplicate Detection

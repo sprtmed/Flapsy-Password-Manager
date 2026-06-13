@@ -11,7 +11,9 @@ struct ImportPreviewView: View {
     }
 
     private var needsDecryption: Bool {
-        isKnoxBackup && (vault.importPreview?.items.isEmpty ?? true)
+        isKnoxBackup
+            && (vault.importPreview?.items.isEmpty ?? true)
+            && (vault.importPreview?.appNotes.isEmpty ?? true)
     }
 
     var body: some View {
@@ -36,7 +38,7 @@ struct ImportPreviewView: View {
             } else if needsDecryption {
                 // Knox backup needs password to decrypt
                 backupPasswordSection
-            } else if let preview = vault.importPreview, !preview.items.isEmpty {
+            } else if let preview = vault.importPreview, !preview.items.isEmpty || !preview.appNotes.isEmpty {
                 // Show parsed item counts
                 itemPreview(preview)
             }
@@ -155,13 +157,17 @@ struct ImportPreviewView: View {
                 if preview.noteCount > 0 {
                     countRow(icon: "\u{1F4DD}", label: "Notes", count: preview.noteCount)
                 }
+                if preview.appNoteCount > 0 {
+                    countRow(icon: "\u{1F5D2}", label: "App Notes", count: preview.appNoteCount)
+                }
             }
             .padding(12)
             .background(theme.fieldBg)
             .cornerRadius(8)
 
             // Total
-            Text("Found \(preview.totalCount) item\(preview.totalCount == 1 ? "" : "s") to import")
+            let totalUnits = preview.totalCount + preview.appNoteCount
+            Text("Found \(totalUnits) item\(totalUnits == 1 ? "" : "s") to import")
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(theme.textSecondary)
 
