@@ -52,6 +52,18 @@ enum VaultPanel {
     case trash
 }
 
+/// A row in the Notes list, with an optional search snippet split into
+/// `prefix` + `match` + `suffix` so the matched substring can be highlighted.
+/// When there's no active search, `match`/`suffix` are empty and `prefix` holds
+/// the note's normal preview line.
+struct NoteListEntry: Identifiable {
+    let note: Note
+    let prefix: String
+    let match: String
+    let suffix: String
+    var id: UUID { note.id }
+}
+
 enum SortOption: String, CaseIterable {
     case nameAsc = "A→Z"
     case nameDesc = "Z→A"
@@ -982,6 +994,36 @@ final class VaultViewModel: ObservableObject {
         return sorted.filter { $0.body.lowercased().contains(query) }
     }
 
+    /// Rows for the Notes list. When a search is active, each row carries a
+    /// snippet of text around the first match (with the matched substring
+    /// isolated for highlighting); otherwise it carries the usual preview line.
+    var noteEntries: [NoteListEntry] {
+        let sorted = notes.sorted { $0.modifiedAt > $1.modifiedAt }
+        let query = noteSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            return sorted.map { NoteListEntry(note: $0, prefix: $0.previewSubtitle, match: "", suffix: "") }
+        }
+        let lowerQuery = query.lowercased()
+        return sorted.compactMap { note -> NoteListEntry? in
+            let body = note.body
+            guard let range = body.lowercased().range(of: lowerQuery) else { return nil }
+
+            let contextChars = 30
+            let beforeCount = body.distance(from: body.startIndex, to: range.lowerBound)
+            let afterCount = body.distance(from: range.upperBound, to: body.endIndex)
+            let lower = body.index(range.lowerBound, offsetBy: -min(contextChars, beforeCount))
+            let upper = body.index(range.upperBound, offsetBy: min(contextChars, afterCount))
+
+            var prefix = String(body[lower..<range.lowerBound]).replacingOccurrences(of: "\n", with: " ")
+            let match = String(body[range])
+            var suffix = String(body[range.upperBound..<upper]).replacingOccurrences(of: "\n", with: " ")
+            if lower != body.startIndex { prefix = "\u{2026}" + prefix }
+            if upper != body.endIndex { suffix += "\u{2026}" }
+
+            return NoteListEntry(note: note, prefix: prefix, match: match, suffix: suffix)
+        }
+    }
+
     var selectedNote: Note? {
         guard let id = selectedNoteID else { return nil }
         return notes.first { $0.id == id }
@@ -1001,6 +1043,17 @@ final class VaultViewModel: ObservableObject {
         guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
         guard notes[idx].body != body else { return }
         notes[idx].body = body
+        notes[idx].modifiedAt = Date()
+    }
+
+    /// Updates a note's rich-text content (RTF + plaintext mirror) and bumps its
+    /// modified date. Called by the rich-text editor on every change. No-ops when
+    /// nothing actually changed so re-renders don't spuriously bump timestamps.
+    func updateNoteContent(_ id: UUID, rtfData: Data, plainText: String) {
+        guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
+        guard notes[idx].body != plainText || notes[idx].rtfData != rtfData else { return }
+        notes[idx].body = plainText
+        notes[idx].rtfData = rtfData
         notes[idx].modifiedAt = Date()
     }
 

@@ -11,13 +11,21 @@ import Foundation
 /// style workflow.
 struct Note: Codable, Identifiable {
     let id: UUID
+    /// Plain-text mirror of the note. Always kept in sync with `rtfData` and used
+    /// for search, the list title, and previews. For legacy/plain notes this is
+    /// the whole content.
     var body: String
+    /// Rich-text (RTF) representation holding bold/italic/bullets/links.
+    /// `nil` for notes created before rich text existed — they render from `body`.
+    /// Optional, so older vaults decode without it (synthesized Codable → nil).
+    var rtfData: Data?
     var createdAt: Date
     var modifiedAt: Date
 
-    init(id: UUID = UUID(), body: String = "", createdAt: Date = Date(), modifiedAt: Date = Date()) {
+    init(id: UUID = UUID(), body: String = "", rtfData: Data? = nil, createdAt: Date = Date(), modifiedAt: Date = Date()) {
         self.id = id
         self.body = body
+        self.rtfData = rtfData
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
     }
