@@ -7,6 +7,7 @@ import AppKit
 struct NotesView: View {
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
+    @FocusState private var listSearchFocused: Bool
 
     var body: some View {
         Group {
@@ -43,6 +44,9 @@ struct NotesView: View {
                     }
                 }
             }
+        }
+        .onChange(of: vault.showNoteSearch) { isOn in
+            if isOn { listSearchFocused = true }
         }
     }
 
@@ -107,6 +111,7 @@ struct NotesView: View {
                     .textFieldStyle(.plain)
                     .font(.system(size: 13, design: .monospaced))
                     .foregroundColor(theme.text)
+                    .focused($listSearchFocused)
             }
             .padding(10)
 
@@ -235,6 +240,9 @@ private struct NoteEditorView: View {
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
     @StateObject private var controller = RichTextController()
+    @State private var showInNoteSearch = false
+    @State private var inNoteQuery = ""
+    @FocusState private var inNoteSearchFocused: Bool
 
     private var note: Note? { vault.notes.first(where: { $0.id == noteID }) }
 
@@ -263,6 +271,18 @@ private struct NoteEditorView: View {
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(theme.textGhost)
 
+                Button(action: { toggleInNoteSearch() }) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 12))
+                        .foregroundColor(showInNoteSearch ? theme.accentBlueLt : theme.textSecondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(showInNoteSearch ? theme.pillBg : theme.fieldBg)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .help("Find in note")
+
                 Button(action: { vault.deleteNote(noteID) }) {
                     Image(systemName: "trash")
                         .font(.system(size: 12))
@@ -278,6 +298,10 @@ private struct NoteEditorView: View {
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 8)
+
+            if showInNoteSearch {
+                inNoteSearchBar
+            }
 
             Divider().background(theme.cardBorder)
 
@@ -305,13 +329,83 @@ private struct NoteEditorView: View {
                     Rectangle().fill(theme.cardBorder).frame(height: 1)
                 }
         }
+        .onChange(of: inNoteQuery) { query in
+            controller.runSearch(query)
+        }
+        .onChange(of: showInNoteSearch) { isOn in
+            if isOn { inNoteSearchFocused = true }
+        }
         .onDisappear {
+            controller.clearSearch()
             vault.discardNoteIfEmpty(noteID)
         }
     }
 
+    private var inNoteSearchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(theme.textFaint)
+
+            TextField("Find in note\u{2026}", text: $inNoteQuery)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundColor(theme.text)
+                .focused($inNoteSearchFocused)
+                .onSubmit { controller.nextMatch() }
+
+            if !inNoteQuery.isEmpty {
+                Text(controller.matchCount == 0 ? "0/0" : "\(controller.currentMatch)/\(controller.matchCount)")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(theme.textFaint)
+                    .fixedSize()
+
+                Button(action: { controller.previousMatch() }) {
+                    Image(systemName: "chevron.up").font(.system(size: 11))
+                        .foregroundColor(theme.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(controller.matchCount == 0)
+
+                Button(action: { controller.nextMatch() }) {
+                    Image(systemName: "chevron.down").font(.system(size: 11))
+                        .foregroundColor(theme.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(controller.matchCount == 0)
+            }
+
+            Button(action: { closeInNoteSearch() }) {
+                Image(systemName: "xmark.circle.fill").font(.system(size: 13))
+                    .foregroundColor(theme.textSecondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
+    private func toggleInNoteSearch() {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            showInNoteSearch.toggle()
+        }
+        if !showInNoteSearch {
+            inNoteQuery = ""
+            controller.clearSearch()
+        }
+    }
+
+    private func closeInNoteSearch() {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            showInNoteSearch = false
+        }
+        inNoteQuery = ""
+        controller.clearSearch()
+    }
+
     private func leaveEditor() {
         let id = noteID
+        controller.clearSearch()
         withAnimation(.easeInOut(duration: 0.15)) {
             vault.selectedNoteID = nil
         }
@@ -325,8 +419,82 @@ private struct NoteEditorView: View {
 final class RichTextController: ObservableObject {
     weak var textView: NSTextView?
 
+    // MARK: In-note find
+
+    /// Match count and current position, published so the editor can show "2/5".
+    @Published var matchCount: Int = 0
+    @Published var currentMatch: Int = 0   // 1-based; 0 when no matches
+    private var matchRanges: [NSRange] = []
+
     func toggleBold() { applyTrait(.boldFontMask) }
     func toggleItalic() { applyTrait(.italicFontMask) }
+
+    /// Highlights every occurrence of `query` (display-only temporary
+    /// attributes, never written to the note) and scrolls to the first match.
+    func runSearch(_ query: String) {
+        guard let tv = textView, let lm = tv.layoutManager, let storage = tv.textStorage else { return }
+        let full = NSRange(location: 0, length: storage.length)
+        lm.removeTemporaryAttribute(.backgroundColor, forCharacterRange: full)
+        matchRanges = []
+
+        let trimmed = query
+        guard !trimmed.isEmpty else {
+            matchCount = 0; currentMatch = 0
+            return
+        }
+
+        let text = tv.string as NSString
+        var start = 0
+        while start < text.length {
+            let found = text.range(
+                of: trimmed,
+                options: [.caseInsensitive],
+                range: NSRange(location: start, length: text.length - start)
+            )
+            if found.location == NSNotFound { break }
+            matchRanges.append(found)
+            start = found.location + max(found.length, 1)
+        }
+
+        matchCount = matchRanges.count
+        currentMatch = matchRanges.isEmpty ? 0 : 1
+        applyHighlights()
+        if let first = matchRanges.first { tv.scrollRangeToVisible(first) }
+    }
+
+    func nextMatch() {
+        guard !matchRanges.isEmpty else { return }
+        currentMatch = currentMatch % matchRanges.count + 1
+        applyHighlights()
+        textView?.scrollRangeToVisible(matchRanges[currentMatch - 1])
+    }
+
+    func previousMatch() {
+        guard !matchRanges.isEmpty else { return }
+        currentMatch = currentMatch <= 1 ? matchRanges.count : currentMatch - 1
+        applyHighlights()
+        textView?.scrollRangeToVisible(matchRanges[currentMatch - 1])
+    }
+
+    func clearSearch() {
+        guard let tv = textView, let lm = tv.layoutManager, let storage = tv.textStorage else { return }
+        lm.removeTemporaryAttribute(.backgroundColor, forCharacterRange: NSRange(location: 0, length: storage.length))
+        matchRanges = []
+        matchCount = 0
+        currentMatch = 0
+    }
+
+    private func applyHighlights() {
+        guard let tv = textView, let lm = tv.layoutManager, let storage = tv.textStorage else { return }
+        lm.removeTemporaryAttribute(.backgroundColor, forCharacterRange: NSRange(location: 0, length: storage.length))
+        for (i, range) in matchRanges.enumerated() {
+            let isCurrent = (i + 1) == currentMatch
+            let color = isCurrent
+                ? NSColor.systemOrange.withAlphaComponent(0.7)
+                : NSColor.systemYellow.withAlphaComponent(0.4)
+            lm.addTemporaryAttributes([.backgroundColor: color], forCharacterRange: range)
+        }
+    }
 
     private func applyTrait(_ trait: NSFontTraitMask) {
         guard let tv = textView, let storage = tv.textStorage else { return }
