@@ -426,7 +426,7 @@ struct VaultItemRow: View {
         }
         .padding(.vertical, 9)
         .padding(.horizontal, 16)
-        .background(isSelected ? theme.activeBg : Color.clear)
+        .background(isSelected ? theme.activeBg : (isHovered ? theme.hoverBg : Color.clear))
         .overlay(alignment: .leading) {
             Rectangle()
                 .fill(isSelected ? theme.accentBlue : Color.clear)
