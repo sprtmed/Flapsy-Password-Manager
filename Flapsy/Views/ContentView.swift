@@ -68,9 +68,12 @@ struct VaultContainerView: View {
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
     @State private var containerWidth: CGFloat = 420
 
-    /// Extra left/right breathing room when the window is narrow. Zero at the
-    /// default/wide width so that view stays pixel-identical.
-    private var sideInset: CGFloat { containerWidth < 380 ? 8 : 0 }
+    /// Extra left/right breathing room that grows as the window narrows.
+    /// Exactly 0 at the wide default (420) so that view stays pixel-identical.
+    private var sideInset: CGFloat {
+        let deficit = max(0, 420 - containerWidth)
+        return min(deficit * 0.55, 24)
+    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
