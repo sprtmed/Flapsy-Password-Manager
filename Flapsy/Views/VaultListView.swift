@@ -175,26 +175,27 @@ struct VaultListView: View {
     // MARK: - Type Filter
 
     private var typeFilterRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 2) {
-                FilterPill(title: "All", isActive: vault.typeFilter == nil) {
-                    vault.typeFilter = nil
-                    vault.selectedItemID = nil
-                }
-                FilterPill(title: "\u{1F511} Logins", isActive: vault.typeFilter == .login) {
-                    vault.typeFilter = .login
-                    vault.selectedItemID = nil
-                }
-                FilterPill(title: "\u{1F4B3} Cards", isActive: vault.typeFilter == .card) {
-                    vault.typeFilter = .card
-                    vault.selectedItemID = nil
-                }
-                FilterPill(title: "\u{1F4DD} Notes", isActive: vault.typeFilter == .note) {
-                    vault.typeFilter = .note
-                    vault.selectedItemID = nil
-                }
+        HStack(spacing: 3) {
+            ScopeButton(icon: "square.grid.2x2", label: "All", isActive: vault.typeFilter == nil) {
+                vault.typeFilter = nil
+                vault.selectedItemID = nil
+            }
+            ScopeButton(icon: "key", label: "Logins", isActive: vault.typeFilter == .login) {
+                vault.typeFilter = .login
+                vault.selectedItemID = nil
+            }
+            ScopeButton(icon: "creditcard", label: "Cards", isActive: vault.typeFilter == .card) {
+                vault.typeFilter = .card
+                vault.selectedItemID = nil
+            }
+            ScopeButton(icon: "doc.text", label: "Notes", isActive: vault.typeFilter == .note) {
+                vault.typeFilter = .note
+                vault.selectedItemID = nil
             }
         }
+        .padding(3)
+        .background(theme.fieldBg)
+        .cornerRadius(11)
         .padding(.horizontal, 16)
         .padding(.top, 8)
     }
@@ -672,6 +673,43 @@ private struct QuickStarButton: View {
         }
         .buttonStyle(.hand)
         .help(isFavorite ? "Remove from favorites" : "Add to favorites")
+        .onHover { hovering = $0 }
+    }
+}
+
+// MARK: - Scope Segmented Control
+
+/// One segment of the type filter (All / Logins / Cards / Notes), matching the
+/// design's `.scope`: icon + label, muted by default, white pill + accent icon when active.
+private struct ScopeButton: View {
+    let icon: String
+    let label: String
+    let isActive: Bool
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(isActive ? theme.accentBlue : (hovering ? theme.textMuted : theme.textFaint))
+                Text(label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(isActive || hovering ? theme.text : theme.textMuted)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isActive ? theme.cardBg : Color.clear)
+                    .shadow(color: isActive ? Color.black.opacity(0.10) : Color.clear, radius: 2, y: 1)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.hand)
         .onHover { hovering = $0 }
     }
 }

@@ -147,6 +147,9 @@ struct ItemDetailView: View {
                     .buttonStyle(.hand)
                 }
 
+                // Health status banner (logins with security issues)
+                healthBanner(for: item, editing: false)
+
                 switch item.type {
                 case .login:
                     loginDetail(item)
@@ -239,7 +242,7 @@ struct ItemDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     // Health status banner (logins with security issues)
-                    healthBanner(for: item)
+                    healthBanner(for: item, editing: true)
 
                     // Name
                     FormLabel("NAME")
@@ -389,10 +392,11 @@ struct ItemDetailView: View {
         return reasons
     }
 
-    /// A `.nudge`-style banner summarizing an item's security issues, shown at the
-    /// top of the edit form. Logins only — cards/notes have no health signals.
+    /// A `.nudge`-style banner summarizing an item's security issues. Logins only —
+    /// cards/notes have no health signals. When `editing` is true the action button
+    /// generates a strong password into the field; otherwise it opens the edit form.
     @ViewBuilder
-    private func healthBanner(for item: VaultItem) -> some View {
+    private func healthBanner(for item: VaultItem, editing: Bool) -> some View {
         let reasons = healthReasons(for: item)
         if !reasons.isEmpty {
             let breached = vault.compromisedItemIDs.contains(item.id)
@@ -421,17 +425,27 @@ struct ItemDetailView: View {
 
                 Spacer(minLength: 8)
 
-                if canGenerate {
-                    Button(action: {
-                        vault.editPassword = GeneratorViewModel.secureRandomPassword()
-                        vault.showEditPassword = true
-                    }) {
-                        Text("Generate")
+                if editing {
+                    if canGenerate {
+                        Button(action: {
+                            vault.editPassword = GeneratorViewModel.secureRandomPassword()
+                            vault.showEditPassword = true
+                        }) {
+                            Text("Generate")
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(accent)
+                        }
+                        .buttonStyle(.hand)
+                        .help("Generate a strong password")
+                    }
+                } else {
+                    Button(action: { vault.requestEditWithReauth(item) }) {
+                        Text("Fix")
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                             .foregroundColor(accent)
                     }
                     .buttonStyle(.hand)
-                    .help("Generate a strong password")
+                    .help("Edit this login")
                 }
             }
             .padding(.horizontal, 11)
