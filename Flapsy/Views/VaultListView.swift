@@ -467,9 +467,9 @@ struct VaultItemRow: View {
 
     private var hasQuickActions: Bool {
         switch item.type {
-        case .login: return hasUsername || hasPassword || hasURL
-        case .card:  return hasCardNumber
-        case .note:  return false
+        // Star toggle is always available, so logins and cards always get a toolbar.
+        case .login, .card: return true
+        case .note:         return false
         }
     }
 
@@ -479,26 +479,28 @@ struct VaultItemRow: View {
             switch item.type {
             case .login:
                 if hasUsername {
-                    quickIconButton(field: "qa-user-\(item.id)", icon: "person", help: "Copy username") {
+                    QuickIconButton(copied: vault.copiedField == "qa-user-\(item.id)", icon: "person", help: "Copy username") {
                         vault.copyToClipboard(item.username!, fieldName: "qa-user-\(item.id)")
                     }
                 }
                 if hasPassword {
-                    quickIconButton(field: "qa-pass-\(item.id)", icon: "key", help: "Copy password") {
+                    QuickIconButton(copied: vault.copiedField == "qa-pass-\(item.id)", icon: "key", help: "Copy password") {
                         vault.copyToClipboard(item.password!, fieldName: "qa-pass-\(item.id)")
                     }
                 }
                 if hasURL {
-                    quickPrimaryButton(label: "Open", icon: "arrow.up.right.square", field: nil, help: "Open \(item.url!)") {
+                    QuickPrimaryButton(copied: false, label: "Open", icon: "arrow.up.right.square", help: "Open \(item.url!)") {
                         openItemURL()
                     }
                 }
+                QuickStarButton(isFavorite: item.isFavorite) { vault.toggleFavorite(item.id) }
             case .card:
                 if hasCardNumber {
-                    quickPrimaryButton(label: "Copy number", icon: "doc.on.doc", field: "qa-card-\(item.id)", help: "Copy card number") {
+                    QuickPrimaryButton(copied: vault.copiedField == "qa-card-\(item.id)", label: "Copy number", icon: "doc.on.doc", help: "Copy card number") {
                         vault.copyToClipboard(item.cardNumber!, fieldName: "qa-card-\(item.id)")
                     }
                 }
+                QuickStarButton(isFavorite: item.isFavorite) { vault.toggleFavorite(item.id) }
             case .note:
                 EmptyView()
             }
@@ -513,39 +515,6 @@ struct VaultItemRow: View {
                 )
                 .shadow(color: Color.black.opacity(0.14), radius: 6, x: 0, y: 2)
         )
-    }
-
-    private func quickIconButton(field: String, icon: String, help: String, action: @escaping () -> Void) -> some View {
-        let copied = vault.copiedField == field
-        return Button(action: action) {
-            Image(systemName: copied ? "checkmark" : icon)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(copied ? theme.accentGreen : theme.textMuted)
-                .frame(width: 28, height: 28)
-                .background(copied ? theme.accentGreen.opacity(0.15) : theme.fieldBg)
-                .cornerRadius(7)
-        }
-        .buttonStyle(.hand)
-        .help(help)
-    }
-
-    private func quickPrimaryButton(label: String, icon: String, field: String?, help: String, action: @escaping () -> Void) -> some View {
-        let copied = field != nil && vault.copiedField == field
-        return Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: copied ? "checkmark" : icon)
-                    .font(.system(size: 11, weight: .semibold))
-                Text(copied ? "Copied" : label)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, 10)
-            .frame(height: 28)
-            .background(theme.accentBlue)
-            .cornerRadius(7)
-        }
-        .buttonStyle(.hand)
-        .help(help)
     }
 
     private func openItemURL() {
@@ -620,6 +589,90 @@ struct VaultItemRow: View {
             }
         }
         return result
+    }
+}
+
+// MARK: - Hover Quick-Action Buttons
+
+/// Icon-only quick-action button (copy username / password).
+/// On hover the glyph darkens from `textMuted` → `text`, matching the design's `.qbtn:hover`.
+private struct QuickIconButton: View {
+    let copied: Bool
+    let icon: String
+    let help: String
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: copied ? "checkmark" : icon)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(copied ? theme.accentGreen : (hovering ? theme.text : theme.textMuted))
+                .frame(width: 28, height: 28)
+                .background(copied ? theme.accentGreen.opacity(0.15) : theme.fieldBg)
+                .cornerRadius(7)
+        }
+        .buttonStyle(.hand)
+        .help(help)
+        .onHover { hovering = $0 }
+    }
+}
+
+/// Primary quick-action button (Open / Copy number).
+/// On hover the background darkens from `accentBlue` → `accentInk`, matching `.qbtn.primary:hover`.
+private struct QuickPrimaryButton: View {
+    let copied: Bool
+    let label: String
+    let icon: String
+    let help: String
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: copied ? "checkmark" : icon)
+                    .font(.system(size: 11, weight: .semibold))
+                Text(copied ? "Copied" : label)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .frame(height: 28)
+            .background(hovering ? theme.accentInk : theme.accentBlue)
+            .cornerRadius(7)
+        }
+        .buttonStyle(.hand)
+        .help(help)
+        .onHover { hovering = $0 }
+    }
+}
+
+/// Favorite toggle inside the hover toolbar. Filled gold when favorited;
+/// otherwise an outline that darkens `textMuted` → `text` on hover.
+private struct QuickStarButton: View {
+    let isFavorite: Bool
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: isFavorite ? "star.fill" : "star")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(isFavorite ? Color(hex: "fbbf24") : (hovering ? theme.text : theme.textMuted))
+                .frame(width: 28, height: 28)
+                .background(theme.fieldBg)
+                .cornerRadius(7)
+        }
+        .buttonStyle(.hand)
+        .help(isFavorite ? "Remove from favorites" : "Add to favorites")
+        .onHover { hovering = $0 }
     }
 }
 

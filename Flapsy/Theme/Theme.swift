@@ -22,6 +22,7 @@ struct FlapsyTheme {
     let cardBorder: Color
     let accentBlue: Color
     let accentBlueLt: Color
+    let accentInk: Color
     let accentPurple: Color
     let accentGreen: Color
     let accentYellow: Color
@@ -55,6 +56,7 @@ struct FlapsyTheme {
         cardBorder: Color(hex: "36363f"),               // --hairline
         accentBlue: Color(hex: "8b8bf2"),               // --accent
         accentBlueLt: Color(hex: "aeaef8"),             // --accent-ink
+        accentInk: Color(hex: "aeaef8"),                // --accent-ink (hover)
         accentPurple: Color(hex: "a78bea"),
         accentGreen: Color(hex: "4cc47e"),              // --good
         accentYellow: Color(hex: "e0a83f"),             // --warn
@@ -88,6 +90,7 @@ struct FlapsyTheme {
         cardBorder: Color(hex: "e6e6ee"),               // --hairline
         accentBlue: Color(hex: "5b5bd6"),               // --accent
         accentBlueLt: Color(hex: "7676e4"),
+        accentInk: Color(hex: "4a4ac4"),                // --accent-ink (hover)
         accentPurple: Color(hex: "8a6bea"),             // crest gradient stop
         accentGreen: Color(hex: "1f9d57"),              // --good
         accentYellow: Color(hex: "c2861a"),             // --warn

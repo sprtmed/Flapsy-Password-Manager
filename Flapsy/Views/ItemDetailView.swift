@@ -238,6 +238,9 @@ struct ItemDetailView: View {
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
+                    // Health status banner (logins with security issues)
+                    healthBanner(for: item)
+
                     // Name
                     FormLabel("NAME")
                     FormTextField(placeholder: "Item name\u{2026}", text: $vault.editName)
@@ -365,6 +368,76 @@ struct ItemDetailView: View {
             } message: {
                 Text("Are you sure you want to delete \"\(item.name)\"?")
             }
+        }
+    }
+
+    // MARK: - Health Status Banner
+
+    /// Plain-language list of an item's security issues (logins only).
+    private func healthReasons(for item: VaultItem) -> [String] {
+        guard item.type == .login else { return [] }
+        var reasons: [String] = []
+        if vault.compromisedItemIDs.contains(item.id) { reasons.append("found in a data breach") }
+        if vault.weakPasswordItemIDs.contains(item.id) { reasons.append("weak") }
+        if vault.reusedPasswordItemIDs.contains(item.id) { reasons.append("reused") }
+        if vault.duplicateLoginItemIDs.contains(item.id) { reasons.append("duplicate login") }
+        if item.passwordAge == .old {
+            reasons.append("unchanged 6+ months")
+        } else if item.passwordAge == .aging {
+            reasons.append("unchanged 3+ months")
+        }
+        return reasons
+    }
+
+    /// A `.nudge`-style banner summarizing an item's security issues, shown at the
+    /// top of the edit form. Logins only — cards/notes have no health signals.
+    @ViewBuilder
+    private func healthBanner(for item: VaultItem) -> some View {
+        let reasons = healthReasons(for: item)
+        if !reasons.isEmpty {
+            let breached = vault.compromisedItemIDs.contains(item.id)
+            let accent = breached ? theme.accentRed : theme.accentYellow
+            let title = breached ? "Password compromised" : "Password needs attention"
+            let canGenerate = breached
+                || vault.weakPasswordItemIDs.contains(item.id)
+                || vault.reusedPasswordItemIDs.contains(item.id)
+                || item.passwordAge == .old
+                || item.passwordAge == .aging
+
+            HStack(alignment: .center, spacing: 9) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 14))
+                    .foregroundColor(accent)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.text)
+                    Text("\u{00B7} " + reasons.joined(separator: ", "))
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(theme.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                if canGenerate {
+                    Button(action: {
+                        vault.editPassword = GeneratorViewModel.secureRandomPassword()
+                        vault.showEditPassword = true
+                    }) {
+                        Text("Generate")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(accent)
+                    }
+                    .buttonStyle(.hand)
+                    .help("Generate a strong password")
+                }
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 9)
+            .background(accent.opacity(0.13))
+            .cornerRadius(10)
         }
     }
 
