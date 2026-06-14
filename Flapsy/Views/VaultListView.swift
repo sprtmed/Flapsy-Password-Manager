@@ -372,13 +372,14 @@ struct VaultItemRow: View {
                     .font(.ui(13, weight: .semibold))
                     .foregroundColor(theme.text)
                     .lineLimit(1)
+                    .truncationMode(.tail)
                 highlightedText(item.subtitle, query: searchQuery)
                     .font(.mono(11))
                     .foregroundColor(theme.textFaint)
                     .lineLimit(1)
+                    .truncationMode(.tail)
             }
-
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if vault.compromisedItemIDs.contains(item.id) {
                 Image(systemName: "exclamationmark.shield.fill")
@@ -410,6 +411,8 @@ struct VaultItemRow: View {
                 Text(item.lastUsedDisplay)
                     .font(.mono(10))
                     .foregroundColor(theme.textFaint)
+                    .lineLimit(1)
+                    .fixedSize()
 
                 if item.type == .login, let password = item.password {
                     let strength = PasswordStrength.calculate(password)
