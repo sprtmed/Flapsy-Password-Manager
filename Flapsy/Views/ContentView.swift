@@ -66,14 +66,10 @@ struct VaultContainerView: View {
     enum HeaderMenuKind: Hashable { case new, more }
     @State private var openMenu: HeaderMenuKind? = nil
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
-    @State private var containerWidth: CGFloat = 420
 
-    /// Extra left/right breathing room that grows as the window narrows.
-    /// Exactly 0 at the wide default (420) so that view stays pixel-identical.
-    private var sideInset: CGFloat {
-        let deficit = max(0, 420 - containerWidth)
-        return min(deficit * 0.55, 24)
-    }
+    /// Extra left/right breathing room added to all content so it doesn't hug
+    /// the window edges. Applied at every width.
+    private let sideInset: CGFloat = 8
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -123,14 +119,8 @@ struct VaultContainerView: View {
                 }
             }
         }
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(key: ContainerWidthKey.self, value: geo.size.width)
-            }
-        )
         .coordinateSpace(name: "vaultContainer")
         .onPreferenceChange(HeaderMenuAnchorKey.self) { menuAnchors = $0 }
-        .onPreferenceChange(ContainerWidthKey.self) { containerWidth = $0 }
         .ignoresSafeArea(.container, edges: .top)
         .onChange(of: vault.currentPanel) { _ in
             vault.showExpandedNote = false
@@ -417,14 +407,6 @@ private struct HeaderMenuAnchorKey: PreferenceKey {
     }
 }
 
-/// Tracks the container width so the layout can add side padding only when narrow.
-private struct ContainerWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 420
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 // MARK: - Header Components
 
 /// Lock-state chip in the header. Shows a live green dot + "Unlocked"; on hover it
@@ -463,6 +445,9 @@ private struct LockChip: View {
             .padding(.vertical, 3)
             .background(hovering ? theme.accentBlue.opacity(0.12) : Color.clear)
             .cornerRadius(7)
+            // Reserve a fixed width so swapping "Unlocked" ↔ "Lock now" on hover
+            // never reflows the header.
+            .frame(width: 96, alignment: .leading)
         }
         .buttonStyle(.hand)
         .help("Lock vault now")
