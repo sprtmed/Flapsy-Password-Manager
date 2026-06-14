@@ -151,7 +151,7 @@ struct LockScreenView: View {
                     )
                     .cornerRadius(10)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .keyboardShortcut(.defaultAction)
                 .disabled(vault.isLoading || vault.isLockedOut)
                 .padding(.horizontal, 32)
@@ -181,7 +181,7 @@ struct LockScreenView: View {
                     )
                     .cornerRadius(10)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .keyboardShortcut(.defaultAction)
                 .disabled(vault.isLoading || vault.isLockedOut)
                 .padding(.horizontal, 32)
@@ -199,7 +199,7 @@ struct LockScreenView: View {
                     .foregroundColor(theme.accentBlueLt)
                     .padding(.vertical, 8)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .disabled(vault.showBiometricPrompt)
             }
 
@@ -228,7 +228,7 @@ struct LockScreenView: View {
                     }
                     .foregroundColor(theme.accentBlueLt)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             } else {
                 Text("v\(updateCheck.currentVersion)")
                     .font(.system(size: 10, design: .monospaced))
@@ -250,7 +250,7 @@ struct LockScreenView: View {
                     }
                     .foregroundColor(theme.textGhost)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
 
                 Spacer()
 
@@ -263,7 +263,7 @@ struct LockScreenView: View {
                     }
                     .foregroundColor(theme.textGhost)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
             .padding(.bottom, 16)
         }
@@ -316,7 +316,7 @@ struct LockScreenView: View {
                                     .background(theme.inputBg)
                                     .cornerRadius(8)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hand)
 
                             Button(action: { vault.startFresh() }) {
                                 Text("Delete & Start Fresh")
@@ -331,7 +331,7 @@ struct LockScreenView: View {
                                     )
                                     .cornerRadius(8)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hand)
                             .disabled(vault.startFreshConfirmText != "DESTROY")
                         }
                     }

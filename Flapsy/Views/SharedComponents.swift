@@ -1,5 +1,58 @@
 import SwiftUI
 
+// MARK: - Pointing-Hand Cursor
+
+/// Button style that behaves like `.plain` but shows the pointing-hand cursor on hover.
+/// Use `.buttonStyle(.hand)` in place of `.buttonStyle(.hand)`.
+struct HandButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HandButtonBody(configuration: configuration)
+    }
+
+    private struct HandButtonBody: View {
+        let configuration: ButtonStyle.Configuration
+        @State private var hovering = false
+
+        var body: some View {
+            configuration.label
+                .opacity(configuration.isPressed ? 0.7 : 1)
+                .onHover { h in
+                    hovering = h
+                    if h { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                }
+                .onDisappear {
+                    // Avoid a stuck cursor if the view is removed while hovered.
+                    if hovering { NSCursor.pop(); hovering = false }
+                }
+        }
+    }
+}
+
+extension ButtonStyle where Self == HandButtonStyle {
+    static var hand: HandButtonStyle { HandButtonStyle() }
+}
+
+/// Adds the pointing-hand cursor on hover to non-Button clickable views
+/// (e.g. rows and toggles driven by `.onTapGesture`).
+struct HandCursorModifier: ViewModifier {
+    @State private var hovering = false
+
+    func body(content: Content) -> some View {
+        content
+            .onHover { h in
+                hovering = h
+                if h { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+            }
+            .onDisappear {
+                if hovering { NSCursor.pop(); hovering = false }
+            }
+    }
+}
+
+extension View {
+    func handCursor() -> some View { modifier(HandCursorModifier()) }
+}
+
 // MARK: - FlapsyToggle
 
 /// Custom toggle matching the mockup: 44x26px track, 20x20 thumb, spring animation.
@@ -34,6 +87,7 @@ struct FlapsyToggle: View {
                 isOn.toggle()
             }
         }
+        .handCursor()
     }
 }
 
@@ -73,7 +127,7 @@ struct FlapsyDropdown: View {
                         .stroke(isOpen ? theme.focusBorder : theme.inputBorder, lineWidth: 1)
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .frame(width: width)
         }
         .overlay(alignment: .top) {
@@ -109,7 +163,7 @@ struct FlapsyDropdown: View {
                     .background(opt == value ? theme.activeBg : Color.clear)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
         }
         .background(theme.ddBg)

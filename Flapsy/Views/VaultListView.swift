@@ -158,7 +158,7 @@ struct VaultListView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.textSecondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .padding(.trailing, 10)
             }
         }
@@ -223,7 +223,7 @@ struct VaultListView: View {
                         .background(vault.showFavoritesOnly ? theme.pillBg : Color.clear)
                         .cornerRadius(20)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 ForEach(vault.categories) { cat in
                     CategoryPill(
                         label: cat.label,
@@ -241,7 +241,7 @@ struct VaultListView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
         }
         .padding(.horizontal, 16)
@@ -267,7 +267,7 @@ struct VaultListView: View {
                         .background(vault.sortOption == option ? theme.pillBg : Color.clear)
                         .cornerRadius(10)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
             Spacer()
         }
@@ -315,7 +315,7 @@ struct VaultListView: View {
                         }
                         .foregroundColor(theme.textGhost)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
                 Text("Auto-lock: \(settings.autoLockEnabled ? "\(Int(settings.autoLockMinutes))m" : "Off")")
                     .font(.system(size: 10, design: .monospaced))
@@ -335,7 +335,7 @@ struct VaultListView: View {
                     }
                     .foregroundColor(theme.accentBlueLt)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
         }
         .padding(.horizontal, 16)
@@ -403,7 +403,7 @@ struct VaultItemRow: View {
                     .font(.system(size: 14))
                     .foregroundColor(item.isFavorite ? Color(hex: "fbbf24") : theme.textFaint)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(item.lastUsedDisplay)
@@ -451,6 +451,10 @@ struct VaultItemRow: View {
         }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) { isHovered = hovering }
+            if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+        }
+        .onDisappear {
+            if isHovered { NSCursor.pop(); isHovered = false }
         }
     }
 
@@ -521,7 +525,7 @@ struct VaultItemRow: View {
                 .background(copied ? theme.accentGreen.opacity(0.15) : theme.fieldBg)
                 .cornerRadius(7)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
         .help(help)
     }
 
@@ -540,7 +544,7 @@ struct VaultItemRow: View {
             .background(theme.accentBlue)
             .cornerRadius(7)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
         .help(help)
     }
 
@@ -639,7 +643,7 @@ struct FilterPill: View {
                 .background(isActive ? theme.pillBg : Color.clear)
                 .cornerRadius(20)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
     }
 }
 
@@ -669,6 +673,6 @@ struct CategoryPill: View {
             .background(isActive ? theme.pillBg : Color.clear)
             .cornerRadius(20)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
     }
 }

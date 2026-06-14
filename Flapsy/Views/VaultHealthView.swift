@@ -213,7 +213,7 @@ struct VaultHealthView: View {
                                 .stroke(isActive ? filterColor(for: option).opacity(0.3) : Color.clear, lineWidth: 1)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .onHover { hovering in
                         if !compact {
                             withAnimation(.easeInOut(duration: 0.15)) {
@@ -317,7 +317,7 @@ struct VaultHealthView: View {
                         .background(theme.fieldBg)
                         .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
             .padding(12)
@@ -394,7 +394,7 @@ struct VaultHealthView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                     }
                 }
                 .padding(12)
@@ -447,7 +447,7 @@ struct VaultHealthView: View {
                         .background(theme.fieldBg)
                         .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
             .padding(12)

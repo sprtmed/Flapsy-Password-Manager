@@ -91,7 +91,7 @@ struct ItemDetailView: View {
                             .font(.system(size: 14))
                             .foregroundColor(theme.textFaint)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
 
                     // Tappable icon + name area (click to dismiss)
                     let catColor = vault.categoryFor(key: item.category)?.color ?? "8b5cf6"
@@ -122,7 +122,7 @@ struct ItemDetailView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     Button(action: {
                         if settings.confirmBeforeDelete {
                             showDeleteConfirmation = true
@@ -138,13 +138,13 @@ struct ItemDetailView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     Button(action: { vault.toggleFavorite(item.id) }) {
                         Text(item.isFavorite ? "\u{2605}" : "\u{2606}")
                             .font(.system(size: 16))
                             .foregroundColor(item.isFavorite ? Color(hex: "fbbf24") : theme.textGhost)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
 
                 switch item.type {
@@ -280,7 +280,7 @@ struct ItemDetailView: View {
                                                     )
                                             )
                                         }
-                                        .buttonStyle(.plain)
+                                        .buttonStyle(.hand)
                                     }
                                 }
                             }
@@ -304,7 +304,7 @@ struct ItemDetailView: View {
                                 )
                                 .cornerRadius(8)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         Button(action: { vault.cancelEditing() }) {
                             Text("Cancel")
@@ -315,7 +315,7 @@ struct ItemDetailView: View {
                                 .background(theme.fieldBg)
                                 .cornerRadius(8)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         Spacer()
 
@@ -335,7 +335,7 @@ struct ItemDetailView: View {
                                 .background(theme.fieldBg)
                                 .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                     }
                     .padding(.top, 4)
                 }
@@ -409,7 +409,7 @@ struct ItemDetailView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 4)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .padding(.trailing, 6)
             }
 
@@ -424,7 +424,7 @@ struct ItemDetailView: View {
                     .background(theme.accentPurple.opacity(0.08))
                     .cornerRadius(8)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
         }
         FormLabel("2FA SECRET (OPTIONAL)")
         FormTextField(placeholder: "Paste base32 key or otpauth:// URI", text: $vault.editTotpSecret)
@@ -909,7 +909,7 @@ struct ItemDetailView: View {
                     .background(theme.fieldBg)
                     .cornerRadius(4)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
 
             if showMarkdownPreview {
@@ -1007,7 +1007,7 @@ struct ReauthOverlay: View {
                         )
                         .cornerRadius(8)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .keyboardShortcut(.defaultAction)
                     .disabled(vault.isReauthenticating)
 
@@ -1020,7 +1020,7 @@ struct ReauthOverlay: View {
                             .background(theme.fieldBg)
                             .cornerRadius(8)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .keyboardShortcut(.cancelAction)
                 }
             }
@@ -1061,7 +1061,7 @@ struct PasswordHistorySection: View {
                 }
                 .foregroundColor(theme.textFaint)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             if expanded {
                 VStack(spacing: 4) {
@@ -1197,7 +1197,7 @@ struct IconButton: View {
                 .background(isActive ? theme.accentGreen.opacity(0.2) : theme.fieldBg)
                 .cornerRadius(6)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
     }
 }
 

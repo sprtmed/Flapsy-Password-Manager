@@ -321,7 +321,7 @@ private struct ClassicPomodoroView: View {
                             .stroke(isSelected ? theme.accentBlue.opacity(0.3) : Color.clear, lineWidth: 1)
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .disabled(timer.classicState != .idle)
                 .opacity(timer.classicState != .idle && !isSelected ? 0.5 : 1)
             }
@@ -365,7 +365,7 @@ private struct ClassicPomodoroView: View {
             .background(bg)
             .cornerRadius(8)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
     }
 }
 
@@ -571,7 +571,7 @@ private struct BlockTimerView: View {
                 .background(isSelected ? theme.accentBlue : theme.fieldBg)
                 .cornerRadius(16)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
     }
 
     // MARK: Action Button
@@ -604,7 +604,7 @@ private struct BlockTimerView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(10)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                     }
                 } else {
                     Button(action: {
@@ -619,7 +619,7 @@ private struct BlockTimerView: View {
                             .background(Color(hex: "1e293b"))
                             .cornerRadius(12)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .modifier(InviteButtonModifier(accent: theme.accentBlue))
                 }
 
@@ -637,7 +637,7 @@ private struct BlockTimerView: View {
                     .background(theme.accentYellow)
                     .cornerRadius(12)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
 
             case .paused:
                 HStack(spacing: 8) {
@@ -654,7 +654,7 @@ private struct BlockTimerView: View {
                         .background(theme.accentGreen)
                         .cornerRadius(12)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
 
                     Button(action: { timer.resetBlocks() }) {
                         Image(systemName: "arrow.counterclockwise")
@@ -665,7 +665,7 @@ private struct BlockTimerView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(12)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
         }
@@ -847,7 +847,7 @@ private struct CelebrationScreen: View {
                         )
                         .cornerRadius(12)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
                 .opacity(textOpacity)

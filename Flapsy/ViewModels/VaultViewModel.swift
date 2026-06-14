@@ -137,6 +137,10 @@ final class VaultViewModel: ObservableObject {
     // MARK: - Copy Feedback
     @Published var copiedField: String? = nil
 
+    // MARK: - Toast
+    @Published var toastMessage: String? = nil
+    private var toastWorkItem: DispatchWorkItem?
+
     // MARK: - Add New Item
     @Published var newType: ItemType = .login
     @Published var newName: String = ""
@@ -931,11 +935,43 @@ final class VaultViewModel: ObservableObject {
             : nil
         ClipboardService.shared.copy(value, clearAfter: clearSeconds)
         copiedField = fieldName
+
+        // Snappy on-screen confirmation toast.
+        let suffix = clearSeconds.map { " \u{00B7} clears in \($0)s" } ?? ""
+        showToast("\(Self.toastLabel(for: fieldName)) copied\(suffix)")
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             if self?.copiedField == fieldName {
                 self?.copiedField = nil
             }
         }
+    }
+
+    /// Shows a transient toast message, auto-dismissed after a short delay.
+    /// Animation is applied at the view layer (see ContentView).
+    func showToast(_ message: String) {
+        toastMessage = message
+        toastWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.toastMessage = nil
+        }
+        toastWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
+    }
+
+    /// Maps an internal copy field name to a human-readable label for toasts.
+    private static func toastLabel(for fieldName: String) -> String {
+        if fieldName.hasPrefix("qa-user") || fieldName == "user" { return "Username" }
+        if fieldName.hasPrefix("qa-pass") || fieldName == "pass" || fieldName.hasPrefix("hist-") { return "Password" }
+        if fieldName.hasPrefix("qa-card") || fieldName == "cardnum" { return "Card number" }
+        if fieldName == "url" { return "Website" }
+        if fieldName == "cvv" { return "CVV" }
+        if fieldName == "exp" { return "Expiry" }
+        if fieldName == "holder" { return "Cardholder" }
+        if fieldName == "note" { return "Note" }
+        if fieldName == "totp" { return "One-time code" }
+        if fieldName == "secretKey" { return "Secret key" }
+        return "Value"
     }
 
     func saveNewItem() {

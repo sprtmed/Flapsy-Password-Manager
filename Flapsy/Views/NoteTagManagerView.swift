@@ -62,7 +62,7 @@ struct NoteTagManagerView: View {
                                 .background(theme.fieldBg)
                                 .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                         .disabled(vault.newNoteTagName.trimmingCharacters(in: .whitespaces).isEmpty)
                         .opacity(vault.newNoteTagName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1.0)
                     }
@@ -88,7 +88,7 @@ struct NoteTagManagerView: View {
                                     .stroke(selected == hex ? Color.white : Color.clear, lineWidth: 1.5)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
         }
@@ -120,7 +120,7 @@ struct NoteTagManagerView: View {
                     .background(theme.fieldBg)
                     .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             // Delete (only if no notes use this tag)
             if !hasNotes {
@@ -133,7 +133,7 @@ struct NoteTagManagerView: View {
                         .background(theme.fieldBg)
                         .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
         }
         .padding(12)
@@ -160,7 +160,7 @@ struct NoteTagManagerView: View {
                         .background(theme.accentBlue.opacity(0.1))
                         .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
 
                 Button(action: { editingKey = nil }) {
                     Text("\u{2715}")
@@ -171,7 +171,7 @@ struct NoteTagManagerView: View {
                         .background(theme.fieldBg)
                         .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
         }
         .padding(12)

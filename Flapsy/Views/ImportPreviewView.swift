@@ -29,7 +29,7 @@ struct ImportPreviewView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.textMuted)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
 
             if vault.isImporting && !needsDecryption {
@@ -127,7 +127,7 @@ struct ImportPreviewView: View {
                 )
                 .cornerRadius(8)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .disabled(backupPassword.isEmpty || vault.isImporting)
         }
     }
@@ -199,7 +199,7 @@ struct ImportPreviewView: View {
                                 .stroke(theme.inputBorder, lineWidth: 1)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .disabled(vault.isImporting)
 
                 Button(action: { vault.confirmImport() }) {
@@ -218,7 +218,7 @@ struct ImportPreviewView: View {
                         .cornerRadius(8)
                         .opacity(vault.isImporting ? 0.5 : 1.0)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .disabled(vault.isImporting)
             }
         }
@@ -251,7 +251,7 @@ struct ImportPreviewView: View {
                                     )
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
 
                     ForEach(vault.categories) { cat in
                         Button(action: { vault.importCategory = cat.key }) {
@@ -275,7 +275,7 @@ struct ImportPreviewView: View {
                                     )
                             )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                     }
                 }
             }

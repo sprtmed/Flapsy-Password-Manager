@@ -54,7 +54,7 @@ struct TrashView: View {
                     .background(theme.accentRed.opacity(0.1))
                     .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -110,7 +110,7 @@ struct TrashView: View {
                     .background(theme.accentBlue.opacity(0.1))
                     .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .help("Restore")
 
             Button(action: { vault.permanentlyDeleteItem(item.id) }) {
@@ -121,7 +121,7 @@ struct TrashView: View {
                     .background(theme.accentRed.opacity(0.1))
                     .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .help("Delete permanently")
         }
         .padding(.vertical, 9)

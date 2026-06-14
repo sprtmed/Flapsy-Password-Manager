@@ -146,7 +146,7 @@ struct SettingsView: View {
                                     )
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
         }
@@ -296,7 +296,7 @@ struct SettingsView: View {
                                     .foregroundColor(theme.accentBlueLt)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                     }
                     .padding(10)
                     .background(theme.fieldBg)
@@ -483,7 +483,7 @@ struct SettingsView: View {
                 .cornerRadius(10)
                 .opacity(vault.isChangingPassword ? 0.7 : 1)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .disabled(vault.isChangingPassword)
         }
     }
@@ -602,7 +602,7 @@ struct SettingsView: View {
                                     .stroke(settings.defaultSortOption == option ? theme.accentBlue.opacity(0.27) : theme.inputBorder, lineWidth: 1)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
             Text("Sort order applied when the vault is unlocked.")
@@ -706,7 +706,7 @@ struct SettingsView: View {
                             .background(theme.accentBlue.opacity(0.1))
                             .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
                 .padding(12)
                 .background(theme.accentYellow.opacity(0.06))
@@ -764,7 +764,7 @@ struct SettingsView: View {
                             .stroke(theme.inputBorder, lineWidth: 1)
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .disabled(vault.isImporting)
 
                 Button(action: { vault.startExportBackup() }) {
@@ -798,7 +798,7 @@ struct SettingsView: View {
                             .stroke(theme.inputBorder, lineWidth: 1)
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
         }
     }
@@ -920,7 +920,7 @@ struct SettingsView: View {
                                             .stroke(theme.inputBorder, lineWidth: 1)
                                     )
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hand)
 
                             Button(action: { vault.resetVault() }) {
                                 Text("Delete Everything")
@@ -935,7 +935,7 @@ struct SettingsView: View {
                                     )
                                     .cornerRadius(8)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hand)
                             .disabled(vault.resetConfirmText != "DELETE")
                         }
                     }
@@ -957,7 +957,7 @@ struct SettingsView: View {
                                 .stroke(theme.accentRed.opacity(0.3), lineWidth: 1)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
         }

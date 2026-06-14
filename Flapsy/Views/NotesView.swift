@@ -74,7 +74,7 @@ struct NotesView: View {
                     .background(vault.showNoteSearch ? theme.pillBg : theme.fieldBg)
                     .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .help("Search notes")
 
             Button(action: {
@@ -88,7 +88,7 @@ struct NotesView: View {
                     .background(theme.accentBlue.opacity(0.1))
                     .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .help("New note")
         }
         .padding(.horizontal, 16)
@@ -123,7 +123,7 @@ struct NotesView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.textSecondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .padding(.trailing, 10)
             }
         }
@@ -157,7 +157,7 @@ struct NotesView: View {
                         .background(vault.showNoteFavoritesOnly ? theme.pillBg : Color.clear)
                         .cornerRadius(20)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .help("Favorites only")
 
                 ForEach(vault.noteTags) { tag in
@@ -178,7 +178,7 @@ struct NotesView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .help("Manage tags")
             }
         }
@@ -207,7 +207,7 @@ struct NotesView: View {
                         .background(theme.accentBlue.opacity(0.1))
                         .cornerRadius(8)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
             Spacer()
         }
@@ -251,7 +251,7 @@ private struct NoteRow: View {
                         .font(.system(size: 14))
                         .foregroundColor(note.isFavorite ? Color(hex: "fbbf24") : theme.textFaint)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .help(note.isFavorite ? "Unstar" : "Star")
 
                 Text(note.dateDisplay)
@@ -268,6 +268,7 @@ private struct NoteRow: View {
                 vault.selectedNoteID = note.id
             }
         }
+        .handCursor()
         .contextMenu {
             Button(role: .destructive) {
                 vault.deleteNote(note.id)
@@ -338,7 +339,7 @@ private struct NoteEditorView: View {
                         .background(theme.fieldBg)
                         .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .help("Back to notes")
 
                     Button(action: { vault.toggleNoteFavorite(noteID) }) {
@@ -350,7 +351,7 @@ private struct NoteEditorView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .help((note?.isFavorite ?? false) ? "Unstar" : "Star")
 
                     tagMenu
@@ -366,7 +367,7 @@ private struct NoteEditorView: View {
                             .background(showInNoteSearch ? theme.pillBg : theme.fieldBg)
                             .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .help("Find in note")
 
                     Button(action: { vault.deleteNote(noteID) }) {
@@ -378,7 +379,7 @@ private struct NoteEditorView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .help("Delete note")
                 }
                 .padding(.horizontal, 16)
@@ -497,14 +498,14 @@ private struct NoteEditorView: View {
                     Image(systemName: "chevron.up").font(.system(size: 11))
                         .foregroundColor(theme.textSecondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .disabled(controller.matchCount == 0)
 
                 Button(action: { controller.nextMatch() }) {
                     Image(systemName: "chevron.down").font(.system(size: 11))
                         .foregroundColor(theme.textSecondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
                 .disabled(controller.matchCount == 0)
             }
 
@@ -512,7 +513,7 @@ private struct NoteEditorView: View {
                 Image(systemName: "xmark.circle.fill").font(.system(size: 13))
                     .foregroundColor(theme.textSecondary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)

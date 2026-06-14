@@ -66,7 +66,7 @@ struct GeneratorView: View {
                     .background(theme.fieldBg)
                     .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             Spacer()
 
@@ -85,7 +85,7 @@ struct GeneratorView: View {
                     )
                     .cornerRadius(8)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
         }
         .padding(.bottom, 8)
     }

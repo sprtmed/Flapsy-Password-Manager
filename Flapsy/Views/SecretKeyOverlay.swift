@@ -82,7 +82,7 @@ struct SecretKeyOverlay: View {
                                     .stroke(theme.inputBorder, lineWidth: 1)
                             )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                     }
                     .padding(.horizontal, 32)
 
@@ -128,7 +128,7 @@ struct SecretKeyOverlay: View {
                             )
                             .cornerRadius(10)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .padding(.horizontal, 32)
 
                     Spacer().frame(height: 16)

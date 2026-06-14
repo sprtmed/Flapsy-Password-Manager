@@ -131,7 +131,7 @@ struct OnboardingView: View {
                     )
                     .cornerRadius(10)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             Spacer()
         }
@@ -299,7 +299,7 @@ struct OnboardingView: View {
                 .cornerRadius(10)
                 .opacity(canCreate ? 1.0 : 0.4)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .disabled(!canCreate || vault.isLoading)
 
             Text("Your password never leaves this device.")
@@ -379,7 +379,7 @@ struct OnboardingView: View {
                     )
                     .cornerRadius(10)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             Spacer()
         }
@@ -430,7 +430,7 @@ struct OnboardingView: View {
                                 .stroke(theme.inputBorder, lineWidth: 1)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
 
                 Button(action: {
                     vault.startImport()
@@ -461,7 +461,7 @@ struct OnboardingView: View {
                     )
                     .cornerRadius(10)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
 
             Spacer()
@@ -532,7 +532,7 @@ struct OnboardingView: View {
                 )
                 .cornerRadius(10)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             Spacer()
         }

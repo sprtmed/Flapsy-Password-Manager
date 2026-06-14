@@ -19,7 +19,7 @@ struct ExportView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.textMuted)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
 
             // Format picker
@@ -88,7 +88,7 @@ struct ExportView: View {
                     .stroke(isSelected ? theme.focusBorder : theme.inputBorder, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
     }
 
     // MARK: - Encrypted Backup
@@ -191,7 +191,7 @@ struct ExportView: View {
                                 .stroke(theme.accentRed.opacity(0.3), lineWidth: 1)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             } else {
                 // Step 2: Master password re-entry
                 Text("Enter your master password to confirm export.")
@@ -244,7 +244,7 @@ struct ExportView: View {
                             .stroke(theme.inputBorder, lineWidth: 1)
                     )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             Button(action: action) {
                 HStack(spacing: 6) {
@@ -273,7 +273,7 @@ struct ExportView: View {
                 )
                 .cornerRadius(8)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .disabled(vault.isExporting)
         }
     }

@@ -39,7 +39,7 @@ struct ExpandedNoteView: View {
                     .background(theme.fieldBg)
                     .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
 
                 Spacer()
 
@@ -55,7 +55,7 @@ struct ExpandedNoteView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
             .padding(.horizontal, 16)
@@ -105,7 +105,7 @@ struct ExpandedNoteView: View {
                                 )
                                 .cornerRadius(8)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         if let onCancel = onCancel {
                             Button(action: onCancel) {
@@ -117,7 +117,7 @@ struct ExpandedNoteView: View {
                                     .background(theme.fieldBg)
                                     .cornerRadius(8)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hand)
                         }
 
                         Spacer()
@@ -132,7 +132,7 @@ struct ExpandedNoteView: View {
                                     .background(theme.fieldBg)
                                     .cornerRadius(6)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hand)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -161,7 +161,7 @@ struct NoteExpandButton: View {
                 .background(theme.fieldBg)
                 .cornerRadius(4)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
         .help("Expand note")
     }
 }

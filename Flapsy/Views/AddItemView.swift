@@ -125,7 +125,7 @@ struct AddItemView: View {
                                         )
                                 )
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hand)
                         }
                     }
                 }
@@ -152,7 +152,7 @@ struct AddItemView: View {
                 .cornerRadius(10)
                 .opacity(vault.canSaveNewItem ? 1.0 : 0.4)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
             .disabled(!vault.canSaveNewItem)
             .padding(.top, 4)
         }
@@ -204,7 +204,7 @@ struct AddItemView: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 4)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                     .padding(.trailing, 6)
                 }
 
@@ -223,7 +223,7 @@ struct AddItemView: View {
                                 .stroke(theme.accentPurple.opacity(0.2), lineWidth: 1)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
 
         VStack(alignment: .leading, spacing: 5) {
@@ -485,6 +485,6 @@ struct TypePill: View {
                         )
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hand)
     }
 }

@@ -62,7 +62,7 @@ struct CategoryManagerView: View {
                                 .background(theme.fieldBg)
                                 .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                         .disabled(vault.newTagName.trimmingCharacters(in: .whitespaces).isEmpty)
                         .opacity(vault.newTagName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1.0)
                     }
@@ -88,7 +88,7 @@ struct CategoryManagerView: View {
                                     .stroke(selected == hex ? Color.white : Color.clear, lineWidth: 1.5)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hand)
                 }
             }
         }
@@ -121,7 +121,7 @@ struct CategoryManagerView: View {
                     .background(theme.fieldBg)
                     .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hand)
 
             // Delete button (only if no items)
             if !hasItems {
@@ -134,7 +134,7 @@ struct CategoryManagerView: View {
                         .background(theme.fieldBg)
                         .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
         }
         .padding(12)
@@ -161,7 +161,7 @@ struct CategoryManagerView: View {
                         .background(theme.accentBlue.opacity(0.1))
                         .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
 
                 Button(action: { editingKey = nil }) {
                     Text("\u{2715}")
@@ -172,7 +172,7 @@ struct CategoryManagerView: View {
                         .background(theme.fieldBg)
                         .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hand)
             }
         }
         .padding(12)

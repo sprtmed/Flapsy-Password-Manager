@@ -29,12 +29,31 @@ struct ContentView: View {
                 SecretKeyOverlay()
                     .transition(.opacity)
             }
+
+            // Transient toast (copy confirmations, etc.)
+            if let toast = vault.toastMessage {
+                VStack {
+                    Spacer()
+                    Text(toast)
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundColor(theme.bg)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(theme.text)
+                        .cornerRadius(10)
+                        .shadow(color: Color.black.opacity(0.3), radius: 12, y: 4)
+                        .padding(.bottom, 16)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .allowsHitTesting(false)
+            }
         }
         .ignoresSafeArea(.container, edges: .top)
         .frame(minWidth: 320, maxWidth: 420, minHeight: 480, maxHeight: 650)
         .environment(\.theme, theme)
         .font(.system(.body, design: .monospaced))
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.currentScreen)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.toastMessage)
     }
 }
 
@@ -121,7 +140,7 @@ struct VaultContainerView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         if vault.currentPanel == .pomodoro {
                             Button(action: {
@@ -139,7 +158,7 @@ struct VaultContainerView: View {
                                     .background(theme.accentBlue.opacity(0.08))
                                     .cornerRadius(6)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hand)
                             .help(PomodoroTimer.shared.showBlockMode ? "Switch to Classic" : "Switch to Block Mode")
                         }
                     } else {
@@ -156,7 +175,7 @@ struct VaultContainerView: View {
                                 .background(settings.isWindowPinned ? theme.accentYellow.opacity(0.1) : theme.fieldBg)
                                 .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                         .help(settings.isWindowPinned ? "Unpin window" : "Pin window")
 
                         Button(action: { vault.navigateToPanel(.addNew) }) {
@@ -168,7 +187,7 @@ struct VaultContainerView: View {
                             .background(theme.accentBlue.opacity(0.1))
                             .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         Button(action: { vault.navigateToPanel(.generator) }) {
                             Text("\u{26A1}")
@@ -179,7 +198,7 @@ struct VaultContainerView: View {
                                 .background(theme.accentPurple.opacity(0.08))
                                 .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         Button(action: { vault.navigateToPanel(.health) }) {
                             ZStack(alignment: .topTrailing) {
@@ -205,7 +224,7 @@ struct VaultContainerView: View {
                                 }
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         Button(action: { vault.navigateToPanel(.pomodoro) }) {
                             Image(systemName: "clock.fill")
@@ -216,7 +235,7 @@ struct VaultContainerView: View {
                                 .background(theme.accentBlue.opacity(0.08))
                                 .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         Button(action: { vault.navigateToPanel(.notes) }) {
                             Image(systemName: "note.text")
@@ -227,7 +246,7 @@ struct VaultContainerView: View {
                                 .background(theme.accentYellow.opacity(0.08))
                                 .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                         .help("Notes")
 
                         Button(action: { vault.navigateToPanel(.settings) }) {
@@ -240,7 +259,7 @@ struct VaultContainerView: View {
                                 .background(theme.fieldBg)
                                 .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
 
                         Button(action: { vault.lock() }) {
                             Image(systemName: "lock.fill")
@@ -251,7 +270,7 @@ struct VaultContainerView: View {
                             .background(theme.fieldBg)
                             .cornerRadius(6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hand)
                     }
                 }
                 .fixedSize()
