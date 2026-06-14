@@ -39,17 +39,17 @@ struct LockScreenView: View {
             // Title
             VStack(spacing: 6) {
                 Text("Flapsy")
-                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                    .font(.ui(18, weight: .bold))
                     .foregroundColor(theme.text)
                 Text("Enter master password to unlock")
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.ui(12))
                     .foregroundColor(theme.textSecondary)
             }
 
             // Password input
             SecureField("", text: $vault.masterPasswordInput)
                 .textFieldStyle(.plain)
-                .font(.system(size: 16, design: .monospaced))
+                .font(.ui(16))
                 .multilineTextAlignment(.center)
                 .padding(10)
                 .background(theme.inputBg)
@@ -69,21 +69,21 @@ struct LockScreenView: View {
             // Error message
             if vault.lockError {
                 Text("\u{2715} \(vault.lockErrorMessage)")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.accentRed)
             }
 
             // Lockout countdown
             if vault.isLockedOut {
                 Text("Wait \(vault.lockoutRemainingSeconds)s before trying again")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.ui(11, weight: .medium))
                     .foregroundColor(theme.accentRed.opacity(0.8))
             }
 
             // Biometric failed message
             if vault.biometricFailed {
                 Text("Touch ID failed \u{2014} enter your password")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.textMuted)
             }
 
@@ -91,12 +91,12 @@ struct LockScreenView: View {
             if vault.needsSecretKeyRecovery {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("SECRET KEY")
-                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .font(.ui(10, weight: .semibold))
                         .foregroundColor(theme.textFaint)
 
                     TextField("XXXXX-XXXXX-XXXXX-XXXXX-XXXXX", text: $vault.secretKeyRecoveryInput)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(.ui(12))
                         .padding(10)
                         .background(theme.inputBg)
                         .cornerRadius(8)
@@ -111,12 +111,12 @@ struct LockScreenView: View {
 
                     if !vault.secretKeyRecoveryError.isEmpty {
                         Text(vault.secretKeyRecoveryError)
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.accentRed)
                     }
 
                     Text("Enter the Secret Key from your Emergency Kit")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.ui(10))
                         .foregroundColor(theme.textMuted)
                 }
                 .padding(.horizontal, 32)
@@ -194,7 +194,7 @@ struct LockScreenView: View {
                         Image(systemName: "touchid")
                             .font(.system(size: 20))
                         Text("Unlock with Touch ID")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.ui(13, weight: .medium))
                     }
                     .foregroundColor(theme.accentBlueLt)
                     .padding(.vertical, 8)
@@ -206,10 +206,10 @@ struct LockScreenView: View {
             // Security badges
             HStack(spacing: 16) {
                 Label("AES-256", systemImage: "diamond.fill")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textGhost)
                 Label("Argon2id", systemImage: "diamond.fill")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textGhost)
             }
 
@@ -224,14 +224,14 @@ struct LockScreenView: View {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 9))
                         Text("v\(version) available")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                     }
                     .foregroundColor(theme.accentBlueLt)
                 }
                 .buttonStyle(.hand)
             } else {
                 Text("v\(updateCheck.currentVersion)")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textGhost)
             }
 
@@ -246,7 +246,7 @@ struct LockScreenView: View {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 8, weight: .semibold))
                         Text("Start Fresh")
-                            .font(.system(size: 9, design: .monospaced))
+                            .font(.ui(9))
                     }
                     .foregroundColor(theme.textGhost)
                 }
@@ -259,7 +259,7 @@ struct LockScreenView: View {
                         Image(systemName: "xmark")
                             .font(.system(size: 8, weight: .semibold))
                         Text("Quit Application")
-                            .font(.system(size: 9, design: .monospaced))
+                            .font(.ui(9))
                     }
                     .foregroundColor(theme.textGhost)
                 }
@@ -279,22 +279,22 @@ struct LockScreenView: View {
                             .foregroundColor(theme.accentRed)
 
                         Text("Delete Vault & Start Fresh")
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .font(.ui(14, weight: .bold))
                             .foregroundColor(theme.text)
 
                         Text("This will permanently delete your vault and all saved logins. A backup copy will be saved as vault.enc.bak.")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                             .foregroundColor(theme.textSecondary)
                             .multilineTextAlignment(.center)
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Type DESTROY to confirm:")
-                                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                .font(.ui(10, weight: .semibold))
                                 .foregroundColor(theme.textFaint)
 
                             TextField("", text: $vault.startFreshConfirmText)
                                 .textFieldStyle(.plain)
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .font(.ui(14, weight: .bold))
                                 .multilineTextAlignment(.center)
                                 .padding(8)
                                 .background(theme.inputBg)
@@ -309,7 +309,7 @@ struct LockScreenView: View {
                         HStack(spacing: 12) {
                             Button(action: { vault.cancelStartFresh() }) {
                                 Text("Cancel")
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .font(.ui(12, weight: .medium))
                                     .foregroundColor(theme.textSecondary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
@@ -320,7 +320,7 @@ struct LockScreenView: View {
 
                             Button(action: { vault.startFresh() }) {
                                 Text("Delete & Start Fresh")
-                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .font(.ui(12, weight: .bold))
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)

@@ -17,7 +17,7 @@ struct NoteTagManagerView: View {
                 VStack(spacing: 6) {
                     if vault.noteTags.isEmpty {
                         Text("No tags yet")
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.ui(12))
                             .foregroundColor(theme.textFaint)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 20)
@@ -52,7 +52,7 @@ struct NoteTagManagerView: View {
 
                         Button(action: { vault.addNoteTag() }) {
                             Text("Add")
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .font(.ui(11, weight: .semibold))
                                 .foregroundColor(
                                     vault.newNoteTagName.trimmingCharacters(in: .whitespaces).isEmpty
                                     ? theme.textGhost : theme.accentBlueLt
@@ -103,7 +103,7 @@ struct NoteTagManagerView: View {
                 .fill(Color(hex: tag.color))
                 .frame(width: 12, height: 12)
             Text(tag.label)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.text)
             Spacer()
 
@@ -153,7 +153,7 @@ struct NoteTagManagerView: View {
 
                 Button(action: { saveEdit(tag.key) }) {
                     Text("Save")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .font(.ui(11, weight: .semibold))
                         .foregroundColor(theme.accentBlueLt)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)

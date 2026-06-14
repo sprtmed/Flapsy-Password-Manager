@@ -15,7 +15,7 @@ struct CategoryManagerView: View {
                 VStack(spacing: 6) {
                     if vault.categories.isEmpty {
                         Text("No categories yet")
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.ui(12))
                             .foregroundColor(theme.textFaint)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 20)
@@ -52,7 +52,7 @@ struct CategoryManagerView: View {
 
                         Button(action: { vault.addCategory() }) {
                             Text("Add")
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .font(.ui(11, weight: .semibold))
                                 .foregroundColor(
                                     vault.newTagName.trimmingCharacters(in: .whitespaces).isEmpty
                                     ? theme.textGhost : theme.accentBlueLt
@@ -103,7 +103,7 @@ struct CategoryManagerView: View {
                 .fill(Color(hex: cat.color))
                 .frame(width: 12, height: 12)
             Text(cat.label)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.text)
             Spacer()
 
@@ -154,7 +154,7 @@ struct CategoryManagerView: View {
 
                 Button(action: { saveEdit(cat.key) }) {
                     Text("Save")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .font(.ui(11, weight: .semibold))
                         .foregroundColor(theme.accentBlueLt)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)

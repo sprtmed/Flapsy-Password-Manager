@@ -72,7 +72,7 @@ struct GeneratorView: View {
 
             Button(action: { generator.generate() }) {
                 Text("Autofill")
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(.ui(12, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
@@ -96,16 +96,16 @@ struct GeneratorView: View {
         HStack {
             if generator.isGenerating {
                 Text("generating\u{2026}")
-                    .font(.system(size: 14, design: .monospaced))
+                    .font(.ui(14))
                     .foregroundColor(theme.textFaint)
                     .opacity(0.6)
             } else if generator.generatedPassword.isEmpty {
                 Text("Click \u{21BB} or Autofill")
-                    .font(.system(size: 14, design: .monospaced))
+                    .font(.ui(14))
                     .foregroundColor(theme.textGhost)
             } else {
                 Text(generator.generatedPassword)
-                    .font(.system(size: 14, design: .monospaced))
+                    .font(.mono(14))
                     .foregroundColor(theme.text)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
@@ -217,7 +217,7 @@ struct GeneratorView: View {
     private func settingRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.text)
             Spacer()
             content()
@@ -229,11 +229,11 @@ struct GeneratorView: View {
         VStack(spacing: 8) {
             HStack {
                 Text(label)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
                 Spacer()
                 Text(displayValue)
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .font(.ui(13, weight: .semibold))
                     .foregroundColor(theme.accentBlueLt)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 2)

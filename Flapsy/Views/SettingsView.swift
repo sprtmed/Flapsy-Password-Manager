@@ -48,7 +48,7 @@ struct SettingsView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.accentYellow)
                     Text("Launch at Login")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                 }
                 Spacer()
@@ -70,7 +70,7 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Text("Automatically start Flapsy when you log in to your Mac.")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -84,7 +84,7 @@ struct SettingsView: View {
                 Text(settings.isDarkMode ? "\u{1F319}" : "\u{2600}\u{FE0F}")
                     .font(.system(size: 16))
                 Text(settings.isDarkMode ? "Dark Mode" : "Light Mode")
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
             }
             Spacer()
@@ -108,7 +108,7 @@ struct SettingsView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.accentYellow)
                     Text("Keep Window Open")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                 }
                 Spacer()
@@ -116,7 +116,7 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Text("Window stays visible when you click outside. Toggle per session with the pin button.")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -158,7 +158,7 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Auto-Lock")
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
                 Spacer()
                 FlapsyToggle(isOn: $settings.autoLockEnabled)
@@ -169,22 +169,22 @@ struct SettingsView: View {
                 VStack(spacing: 6) {
                     HStack {
                         Text("Timer")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                             .foregroundColor(theme.textFaint)
                         Spacer()
                         Text("\(Int(settings.autoLockMinutes)) min")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .font(.ui(12, weight: .semibold))
                             .foregroundColor(theme.accentBlueLt)
                     }
                     Slider(value: $settings.autoLockMinutes, in: 1...30, step: 1)
                         .tint(theme.accentBlue)
                     HStack {
                         Text("1m")
-                            .font(.system(size: 9, design: .monospaced))
+                            .font(.ui(9))
                             .foregroundColor(theme.textGhost)
                         Spacer()
                         Text("30m")
-                            .font(.system(size: 9, design: .monospaced))
+                            .font(.ui(9))
                             .foregroundColor(theme.textGhost)
                     }
                 }
@@ -203,7 +203,7 @@ struct SettingsView: View {
                         .font(.system(size: 16))
                         .foregroundColor(theme.accentBlueLt)
                     Text("Touch ID")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                 }
                 Spacer()
@@ -224,7 +224,7 @@ struct SettingsView: View {
 
             if !BiometricService.shared.isBiometricAvailable {
                 Text("Touch ID is not available on this device")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textFaint)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -241,7 +241,7 @@ struct SettingsView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.accentRed)
                     Text("Breach Detection")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                 }
                 Spacer()
@@ -257,7 +257,7 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Text("Checks passwords against Have I Been Pwned on unlock. Only 5-char SHA-1 prefixes are sent \u{2014} full passwords never leave your device.")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -271,14 +271,14 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Your Secret Key adds an extra layer of encryption. Store it safely — you'll need it if you move to a new device.")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let formatted = vault.formattedSecretKey {
                     HStack(spacing: 8) {
                         Text(formatted)
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .font(.ui(11, weight: .medium))
                             .foregroundColor(theme.text)
                             .textSelection(.enabled)
                             .lineLimit(nil)
@@ -311,7 +311,7 @@ struct SettingsView: View {
                             .font(.system(size: 14))
                             .foregroundColor(theme.accentGreen)
                         Text("Protected by Secure Enclave")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                             .foregroundColor(theme.accentGreen)
                     }
                     .padding(10)
@@ -319,7 +319,7 @@ struct SettingsView: View {
                     .cornerRadius(8)
                 } else {
                     Text("No Secret Key found (v1 vault)")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.ui(11))
                         .foregroundColor(theme.textFaint)
                 }
             }
@@ -336,13 +336,13 @@ struct SettingsView: View {
             ZStack(alignment: .leading) {
                 if vault.changeOldPassword.isEmpty {
                     Text("Current password")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.textMuted)
                         .padding(10)
                 }
                 SecureField("", text: $vault.changeOldPassword)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
                     .padding(10)
             }
@@ -358,13 +358,13 @@ struct SettingsView: View {
                 ZStack(alignment: .leading) {
                     if vault.changeNewPassword.isEmpty {
                         Text("New password")
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.ui(13))
                             .foregroundColor(theme.textMuted)
                             .padding(10)
                     }
                     SecureField("", text: $vault.changeNewPassword)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                         .padding(10)
                 }
@@ -392,7 +392,7 @@ struct SettingsView: View {
                         .frame(height: 4)
 
                         Text("\(PasswordStrength.label(for: strength)) \(strength)%")
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .font(.ui(10, weight: .semibold))
                             .foregroundColor(PasswordStrength.color(for: strength))
                             .fixedSize()
                     }
@@ -404,13 +404,13 @@ struct SettingsView: View {
                 ZStack(alignment: .leading) {
                     if vault.changeConfirmPassword.isEmpty {
                         Text("Confirm new password")
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.ui(13))
                             .foregroundColor(theme.textMuted)
                             .padding(10)
                     }
                     SecureField("", text: $vault.changeConfirmPassword)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                         .padding(10)
                 }
@@ -428,11 +428,11 @@ struct SettingsView: View {
                 if !vault.changeConfirmPassword.isEmpty {
                     if vault.changeConfirmPassword == vault.changeNewPassword {
                         Text("\u{2713} Passwords match")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.accentGreen)
                     } else {
                         Text("\u{2715} Passwords do not match")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.accentRed)
                     }
                 }
@@ -441,14 +441,14 @@ struct SettingsView: View {
             // Error
             if !vault.changePasswordError.isEmpty {
                 Text(vault.changePasswordError)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.accentRed)
             }
 
             // Success
             if vault.changePasswordSuccess {
                 Text("\u{2713} Password updated")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.accentGreen)
             }
 
@@ -460,14 +460,14 @@ struct SettingsView: View {
                             .controlSize(.small)
                             .tint(.white)
                         Text("Updating...")
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .font(.ui(13, weight: .semibold))
                             .foregroundColor(.white)
                     } else {
                         Image(systemName: "key.fill")
                             .font(.system(size: 12))
                             .foregroundColor(.white)
                         Text("Update Password")
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .font(.ui(13, weight: .semibold))
                             .foregroundColor(.white)
                     }
                 }
@@ -494,7 +494,7 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Clear Clipboard")
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
                 Spacer()
                 FlapsyToggle(isOn: $settings.clipboardClearEnabled)
@@ -505,22 +505,22 @@ struct SettingsView: View {
                 VStack(spacing: 6) {
                     HStack {
                         Text("After")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                             .foregroundColor(theme.textFaint)
                         Spacer()
                         Text("\(Int(settings.clipboardClearSeconds))s")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .font(.ui(12, weight: .semibold))
                             .foregroundColor(theme.accentBlueLt)
                     }
                     Slider(value: $settings.clipboardClearSeconds, in: 5...120, step: 5)
                         .tint(theme.accentBlue)
                     HStack {
                         Text("5s")
-                            .font(.system(size: 9, design: .monospaced))
+                            .font(.ui(9))
                             .foregroundColor(theme.textGhost)
                         Spacer()
                         Text("120s")
-                            .font(.system(size: 9, design: .monospaced))
+                            .font(.ui(9))
                             .foregroundColor(theme.textGhost)
                     }
                 }
@@ -539,7 +539,7 @@ struct SettingsView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.accentBlueLt)
                     Text("Open URL + Copy Password")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                 }
                 Spacer()
@@ -547,7 +547,7 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Text("Shows a launch button that copies the password and opens the URL in your browser.")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -562,7 +562,7 @@ struct SettingsView: View {
                     .font(.system(size: 16))
                     .foregroundColor(Color(hex: "fbbf24"))
                 Text("Default Favorites Filter")
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
             }
             Spacer()
@@ -581,7 +581,7 @@ struct SettingsView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.accentBlueLt)
                     Text("Default Sort")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                 }
                 Spacer()
@@ -591,7 +591,7 @@ struct SettingsView: View {
                 ForEach(SortOption.allCases, id: \.self) { option in
                     Button(action: { settings.defaultSortOption = option }) {
                         Text(option.rawValue)
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .font(.ui(10, weight: .medium))
                             .foregroundColor(settings.defaultSortOption == option ? theme.accentBlueLt : theme.textMuted)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
@@ -606,7 +606,7 @@ struct SettingsView: View {
                 }
             }
             Text("Sort order applied when the vault is unlocked.")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 2)
@@ -623,7 +623,7 @@ struct SettingsView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.accentBlueLt)
                     Text("Always Expand Notes")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                 }
                 Spacer()
@@ -631,7 +631,7 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Text("Notes always open in full-height expanded view.")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -646,7 +646,7 @@ struct SettingsView: View {
                     .font(.system(size: 14))
                     .foregroundColor(theme.accentRed)
                 Text("Confirm Before Delete")
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
             }
             Spacer()
@@ -665,7 +665,7 @@ struct SettingsView: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.accentBlueLt)
                     Text("Check for Updates")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                 }
                 Spacer()
@@ -673,7 +673,7 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Text("Checks GitHub for new releases on launch. No data is sent.")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -690,16 +690,16 @@ struct SettingsView: View {
                         .foregroundColor(theme.accentYellow)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(settings.lastBackupDate == nil ? "No backup yet" : "Backup overdue")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .font(.ui(12, weight: .semibold))
                             .foregroundColor(theme.accentYellow)
                         Text(backupReminderText)
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.textFaint)
                     }
                     Spacer()
                     Button(action: { vault.startExportBackup() }) {
                         Text("Backup")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .font(.ui(11, weight: .medium))
                             .foregroundColor(theme.accentBlueLt)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
@@ -739,16 +739,16 @@ struct SettingsView: View {
                             .font(.system(size: 16))
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Import")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .font(.ui(13, weight: .medium))
                                 .foregroundColor(theme.text)
                             Text("1Password, CSV, JSON, Bitwarden")
-                                .font(.system(size: 10, design: .monospaced))
+                                .font(.ui(10))
                                 .foregroundColor(theme.textFaint)
                         }
                         Spacer()
                         if settings.showImportSuccess {
                             Text("\u{2713} Imported")
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(.ui(11))
                                 .foregroundColor(theme.accentGreen)
                         } else {
                             Text("\u{203A}")
@@ -773,16 +773,16 @@ struct SettingsView: View {
                             .font(.system(size: 16))
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Export")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .font(.ui(13, weight: .medium))
                                 .foregroundColor(theme.text)
                             Text("Encrypted backup or CSV")
-                                .font(.system(size: 10, design: .monospaced))
+                                .font(.ui(10))
                                 .foregroundColor(theme.textFaint)
                         }
                         Spacer()
                         if settings.showExportSuccess {
                             Text("\u{2713} Exported")
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(.ui(11))
                                 .foregroundColor(theme.accentGreen)
                         } else {
                             Text("\u{203A}")
@@ -840,11 +840,11 @@ struct SettingsView: View {
     private func securityRow(_ label: String, value: String) -> some View {
         HStack {
             Text("\u{25C8} \(label)")
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textFaint)
             Spacer()
             Text(value)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .font(.ui(11, weight: .medium))
                 .foregroundColor(theme.textSecondary)
         }
     }
@@ -855,7 +855,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 4) {
             FormLabel("VAULT LOCATION")
             Text(StorageService.shared.vaultFilePath)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textFaint)
                 .lineLimit(nil)
         }
@@ -876,26 +876,26 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 Text("Permanently delete your vault and all stored passwords. This cannot be undone.")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if vault.showResetConfirmation {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Type DELETE to confirm:")
-                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .font(.ui(11, weight: .semibold))
                             .foregroundColor(theme.accentRed)
 
                         ZStack(alignment: .leading) {
                             if vault.resetConfirmText.isEmpty {
                                 Text("DELETE")
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(.ui(13))
                                     .foregroundColor(theme.textGhost)
                                     .padding(10)
                             }
                             TextField("", text: $vault.resetConfirmText)
                                 .textFieldStyle(.plain)
-                                .font(.system(size: 13, design: .monospaced))
+                                .font(.ui(13))
                                 .foregroundColor(theme.accentRed)
                                 .padding(10)
                         }
@@ -909,7 +909,7 @@ struct SettingsView: View {
                         HStack(spacing: 8) {
                             Button(action: { vault.cancelReset() }) {
                                 Text("Cancel")
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .font(.ui(12, weight: .medium))
                                     .foregroundColor(theme.textSecondary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
@@ -924,7 +924,7 @@ struct SettingsView: View {
 
                             Button(action: { vault.resetVault() }) {
                                 Text("Delete Everything")
-                                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                    .font(.ui(12, weight: .semibold))
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
@@ -945,7 +945,7 @@ struct SettingsView: View {
                             Image(systemName: "trash.fill")
                                 .font(.system(size: 12))
                             Text("Delete All Data")
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .font(.ui(13, weight: .semibold))
                         }
                         .foregroundColor(theme.accentRed)
                         .frame(maxWidth: .infinity)

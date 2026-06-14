@@ -109,7 +109,7 @@ struct FlapsyDropdown: View {
             Button(action: { withAnimation(.easeOut(duration: 0.15)) { isOpen.toggle() } }) {
                 HStack {
                     Text(value)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(.ui(12))
                         .foregroundColor(theme.text)
                     Spacer()
                     Text("▼")
@@ -149,7 +149,7 @@ struct FlapsyDropdown: View {
                 }) {
                     HStack {
                         Text(opt)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.ui(12))
                             .foregroundColor(opt == value ? theme.accentBlueLt : theme.textSecondary)
                         Spacer()
                         if opt == value {

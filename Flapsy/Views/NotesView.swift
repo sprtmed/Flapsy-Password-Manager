@@ -55,7 +55,7 @@ struct NotesView: View {
     private var header: some View {
         HStack(spacing: 8) {
             Text("\(vault.notes.count) note\(vault.notes.count == 1 ? "" : "s")")
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textGhost)
 
             Spacer()
@@ -106,12 +106,12 @@ struct NotesView: View {
             ZStack(alignment: .leading) {
                 if vault.noteSearchText.isEmpty {
                     Text("Search notes\u{2026}")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.textSecondary)
                 }
                 TextField("", text: $vault.noteSearchText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
                     .focused($listSearchFocused)
             }
@@ -193,14 +193,14 @@ struct NotesView: View {
                 .font(.system(size: 32))
                 .foregroundColor(theme.textGhost)
             Text(vault.noteSearchText.isEmpty ? "No notes yet" : "No matching notes")
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.textFaint)
             if vault.noteSearchText.isEmpty {
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.15)) { _ = vault.addNote() }
                 }) {
                     Text("+ New note")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .font(.ui(12, weight: .medium))
                         .foregroundColor(theme.accentBlueLt)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
@@ -234,7 +234,7 @@ private struct NoteRow: View {
                             .frame(width: 8, height: 8)
                     }
                     Text(note.displayTitle)
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .font(.ui(14, weight: .semibold))
                         .foregroundColor(theme.text)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -255,7 +255,7 @@ private struct NoteRow: View {
                 .help(note.isFavorite ? "Unstar" : "Star")
 
                 Text(note.dateDisplay)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.textFaint)
                     .fixedSize()
             }
@@ -283,7 +283,7 @@ private struct NoteRow: View {
         if entry.match.isEmpty {
             if !entry.prefix.isEmpty {
                 Text(entry.prefix)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.textFaint)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -295,7 +295,7 @@ private struct NoteRow: View {
                 + Text(entry.match).foregroundColor(theme.accentBlueLt).bold()
                 + Text(entry.suffix).foregroundColor(theme.textFaint)
             )
-            .font(.system(size: 11, design: .monospaced))
+            .font(.ui(11))
             .lineLimit(2)
             .truncationMode(.tail)
         }
@@ -329,7 +329,7 @@ private struct NoteEditorView: View {
                                 .font(.system(size: 11, weight: .semibold))
                             if !compact {
                                 Text("Notes")
-                                    .font(.system(size: 12, design: .monospaced))
+                                    .font(.ui(12))
                                     .fixedSize()
                             }
                         }
@@ -421,7 +421,7 @@ private struct NoteEditorView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .font(.system(size: 9, design: .monospaced))
+            .font(.ui(9))
             .foregroundColor(theme.textGhost)
             .padding(.horizontal, 16)
             .padding(.vertical, 6)
@@ -462,7 +462,7 @@ private struct NoteEditorView: View {
                     Text("Tag")
                 }
             }
-            .font(.system(size: 11, design: .monospaced))
+            .font(.ui(11))
             .foregroundColor(current == nil ? theme.textSecondary : theme.accentBlueLt)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -483,14 +483,14 @@ private struct NoteEditorView: View {
 
             TextField("Find in note\u{2026}", text: $inNoteQuery)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.ui(12))
                 .foregroundColor(theme.text)
                 .focused($inNoteSearchFocused)
                 .onSubmit { controller.nextMatch() }
 
             if !inNoteQuery.isEmpty {
                 Text(controller.matchCount == 0 ? "0/0" : "\(controller.currentMatch)/\(controller.matchCount)")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.textFaint)
                     .fixedSize()
 

@@ -37,10 +37,10 @@ struct SecretKeyOverlay: View {
                     // Title
                     VStack(spacing: 6) {
                         Text("Your Secret Key")
-                            .font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .font(.ui(18, weight: .bold))
                             .foregroundColor(theme.text)
                         Text("Save this key somewhere safe. You'll need it\nto sign in on a new device.")
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.ui(12))
                             .foregroundColor(theme.textMuted)
                             .multilineTextAlignment(.center)
                     }
@@ -48,7 +48,7 @@ struct SecretKeyOverlay: View {
                     // Secret Key display
                     VStack(spacing: 10) {
                         Text(vault.displayedSecretKey)
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .font(.mono(13, weight: .semibold))
                             .foregroundColor(theme.text)
                             .textSelection(.enabled)
                             .multilineTextAlignment(.center)
@@ -70,7 +70,7 @@ struct SecretKeyOverlay: View {
                                 Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
                                     .font(.system(size: 12))
                                 Text(hasCopied ? "Copied!" : "Copy Secret Key")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(.ui(13, weight: .medium))
                             }
                             .foregroundColor(hasCopied ? theme.accentGreen : theme.accentBlueLt)
                             .frame(maxWidth: .infinity)
@@ -93,7 +93,7 @@ struct SecretKeyOverlay: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(Color(hex: "f59e0b"))
                             Text("Important")
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .font(.ui(12, weight: .bold))
                                 .foregroundColor(theme.text)
                         }
 
@@ -140,10 +140,10 @@ struct SecretKeyOverlay: View {
     private func warningBullet(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 6) {
             Text("\u{2022}")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textMuted)
             Text(text)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
         }

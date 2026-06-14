@@ -103,6 +103,22 @@ struct FlapsyTheme {
     )
 }
 
+// MARK: - App Fonts
+
+extension Font {
+    /// The app's UI typeface (sans-serif). Used for titles, labels, buttons, menus, etc.
+    /// Swap the implementation here to change the whole app's UI font (e.g. to Inter).
+    static func ui(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight)
+    }
+
+    /// Monospaced typeface for values that benefit from fixed-width alignment:
+    /// passwords, usernames, one-time codes, card numbers, ages, keyboard hints.
+    static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .monospaced)
+    }
+}
+
 // MARK: - Color Hex Init
 
 extension Color {

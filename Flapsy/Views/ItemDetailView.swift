@@ -104,7 +104,7 @@ struct ItemDetailView: View {
                             typeIcon(for: item)
                         }
                         Text(item.name)
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .font(.ui(14, weight: .bold))
                             .foregroundColor(theme.text)
                             .lineLimit(1)
                         Spacer()
@@ -271,7 +271,7 @@ struct ItemDetailView: View {
                                                     .fill(Color(hex: cat.color))
                                                     .frame(width: 8, height: 8)
                                                 Text(cat.label)
-                                                    .font(.system(size: 12, design: .monospaced))
+                                                    .font(.ui(12))
                                                     .foregroundColor(vault.editCategory == cat.key ? theme.accentBlueLt : theme.textMuted)
                                             }
                                             .padding(.horizontal, 14)
@@ -297,7 +297,7 @@ struct ItemDetailView: View {
                     HStack(spacing: 8) {
                         Button(action: { vault.saveEditedItem() }) {
                             Text("Save")
-                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .font(.ui(12, weight: .semibold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 8)
@@ -314,7 +314,7 @@ struct ItemDetailView: View {
 
                         Button(action: { vault.cancelEditing() }) {
                             Text("Cancel")
-                                .font(.system(size: 12, design: .monospaced))
+                                .font(.ui(12))
                                 .foregroundColor(theme.textSecondary)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
@@ -415,10 +415,10 @@ struct ItemDetailView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .font(.ui(12, weight: .bold))
                         .foregroundColor(theme.text)
                     Text("\u{00B7} " + reasons.joined(separator: ", "))
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.ui(11))
                         .foregroundColor(theme.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -432,7 +432,7 @@ struct ItemDetailView: View {
                             vault.showEditPassword = true
                         }) {
                             Text("Generate")
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .font(.ui(12, weight: .bold))
                                 .foregroundColor(accent)
                         }
                         .buttonStyle(.hand)
@@ -441,7 +441,7 @@ struct ItemDetailView: View {
                 } else {
                     Button(action: { vault.requestEditWithReauth(item) }) {
                         Text("Fix")
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .font(.ui(12, weight: .bold))
                             .foregroundColor(accent)
                     }
                     .buttonStyle(.hand)
@@ -472,13 +472,13 @@ struct ItemDetailView: View {
                     ZStack(alignment: .leading) {
                         if vault.editPassword.isEmpty {
                             Text("Enter or generate\u{2026}")
-                                .font(.system(size: 13, design: .monospaced))
+                                .font(.ui(13))
                                 .foregroundColor(theme.textSecondary)
                                 .padding(10)
                         }
                         SecureField("", text: $vault.editPassword)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.ui(13))
                             .foregroundColor(theme.text)
                             .padding(10)
                     }
@@ -491,7 +491,7 @@ struct ItemDetailView: View {
                 }
                 Button(action: { vault.showEditPassword.toggle() }) {
                     Text(vault.showEditPassword ? "Hide" : "Show")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.ui(11))
                         .foregroundColor(theme.textFaint)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 4)
@@ -504,7 +504,7 @@ struct ItemDetailView: View {
                 vault.editPassword = GeneratorViewModel.secureRandomPassword()
             }) {
                 Text("\u{26A1} Gen")
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(.ui(12, weight: .semibold))
                     .foregroundColor(theme.accentPurple)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -549,7 +549,7 @@ struct ItemDetailView: View {
     private var cardEditFields: some View {
         HStack {
             Text("Card Type")
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.text)
             Spacer()
             FlapsyDropdown(
@@ -670,11 +670,11 @@ struct ItemDetailView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("URL")
-                        .font(.system(size: 9, design: .monospaced))
+                        .font(.ui(9))
                         .foregroundColor(theme.textFaint)
                         .tracking(1)
                     Text(url)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.accentBlueLt)
                         .onHover { hovering in
                             if hovering {
@@ -733,11 +733,11 @@ struct ItemDetailView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("PASSWORD")
-                        .font(.system(size: 9, design: .monospaced))
+                        .font(.ui(9))
                         .foregroundColor(theme.textFaint)
                         .tracking(1)
                     Text(vault.showPassword ? password : String(repeating: "\u{2022}", count: 14))
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.mono(13))
                         .foregroundColor(vault.showPassword ? theme.text : theme.accentBlueLt)
                 }
                 Spacer()
@@ -766,7 +766,7 @@ struct ItemDetailView: View {
             let strength = PasswordStrength.calculate(password)
             HStack(spacing: 10) {
                 Text("STRENGTH")
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.ui(9))
                     .foregroundColor(theme.textFaint)
                     .tracking(1)
                 GeometryReader { geo in
@@ -780,7 +780,7 @@ struct ItemDetailView: View {
                 }
                 .frame(height: 4)
                 Text("\(strength)%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.ui(11, weight: .semibold))
                     .foregroundColor(PasswordStrength.color(for: strength))
             }
             .padding(.horizontal, 12)
@@ -802,7 +802,7 @@ struct ItemDetailView: View {
                         .font(.system(size: 11))
                         .foregroundColor(ageColor)
                     Text("Password is \(ageLabel) — consider rotating it")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.ui(10))
                         .foregroundColor(ageColor)
                 }
                 .padding(.horizontal, 12)
@@ -822,7 +822,7 @@ struct ItemDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text("NOTES")
-                        .font(.system(size: 9, design: .monospaced))
+                        .font(.ui(9))
                         .foregroundColor(theme.textFaint)
                         .tracking(1)
                     Spacer()
@@ -833,7 +833,7 @@ struct ItemDetailView: View {
                     }
                 }
                 Text(notes)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.ui(12))
                     .foregroundColor(theme.textSecondary)
                     .lineSpacing(3)
             }
@@ -851,7 +851,7 @@ struct ItemDetailView: View {
         if let cardType = item.cardType, !cardType.isEmpty {
             HStack(spacing: 6) {
                 Text(cardType)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.ui(11, weight: .medium))
                     .foregroundColor(theme.accentBlueLt)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -874,11 +874,11 @@ struct ItemDetailView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("CARD NUMBER")
-                        .font(.system(size: 9, design: .monospaced))
+                        .font(.ui(9))
                         .foregroundColor(theme.textFaint)
                         .tracking(1)
                     Text(vault.showCardNumber ? number : "\u{2022}\u{2022}\u{2022}\u{2022} \u{2022}\u{2022}\u{2022}\u{2022} \u{2022}\u{2022}\u{2022}\u{2022} \(String(number.suffix(4)))")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(vault.showCardNumber ? theme.text : theme.accentBlueLt)
                         .tracking(1)
                 }
@@ -914,11 +914,11 @@ struct ItemDetailView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("CVV")
-                            .font(.system(size: 9, design: .monospaced))
+                            .font(.ui(9))
                             .foregroundColor(theme.textFaint)
                             .tracking(1)
                         Text(vault.showCVV ? cvv : "\u{2022}\u{2022}\u{2022}")
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.ui(13))
                             .foregroundColor(vault.showCVV ? theme.text : theme.accentBlueLt)
                     }
                     Spacer()
@@ -945,7 +945,7 @@ struct ItemDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text("NOTES")
-                        .font(.system(size: 9, design: .monospaced))
+                        .font(.ui(9))
                         .foregroundColor(theme.textFaint)
                         .tracking(1)
                     Spacer()
@@ -956,7 +956,7 @@ struct ItemDetailView: View {
                     }
                 }
                 Text(notes)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.ui(12))
                     .foregroundColor(theme.textSecondary)
                     .lineSpacing(3)
             }
@@ -974,7 +974,7 @@ struct ItemDetailView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("SECURE NOTE")
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.ui(9))
                     .foregroundColor(theme.textFaint)
                     .tracking(1)
                 Spacer()
@@ -988,7 +988,7 @@ struct ItemDetailView: View {
                         Image(systemName: showMarkdownPreview ? "doc.richtext" : "doc.plaintext")
                             .font(.system(size: 10))
                         Text(showMarkdownPreview ? "Rich" : "Raw")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                     }
                     .foregroundColor(theme.textFaint)
                     .padding(.horizontal, 6)
@@ -1037,24 +1037,24 @@ struct ReauthOverlay: View {
                     .foregroundColor(theme.accentBlueLt)
 
                 Text("Re-authenticate")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .font(.ui(13, weight: .bold))
                     .foregroundColor(theme.text)
 
                 Text("Enter your master password to edit credentials")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textSecondary)
                     .multilineTextAlignment(.center)
 
                 ZStack(alignment: .leading) {
                     if vault.reauthPassword.isEmpty {
                         Text("Master password")
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.ui(13))
                             .foregroundColor(theme.textMuted)
                             .padding(10)
                     }
                     SecureField("", text: $vault.reauthPassword)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                         .padding(10)
                 }
@@ -1067,7 +1067,7 @@ struct ReauthOverlay: View {
 
                 if !vault.reauthError.isEmpty {
                     Text(vault.reauthError)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.ui(10))
                         .foregroundColor(theme.accentRed)
                 }
 
@@ -1080,7 +1080,7 @@ struct ReauthOverlay: View {
                                     .tint(.white)
                             }
                             Text(vault.isReauthenticating ? "Verifying..." : "Confirm")
-                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .font(.ui(12, weight: .semibold))
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
@@ -1100,7 +1100,7 @@ struct ReauthOverlay: View {
 
                     Button(action: { vault.cancelReauth() }) {
                         Text("Cancel")
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.ui(12))
                             .foregroundColor(theme.textSecondary)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
@@ -1141,10 +1141,10 @@ struct PasswordHistorySection: View {
                     Image(systemName: expanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 8))
                     Text("PASSWORD HISTORY")
-                        .font(.system(size: 9, design: .monospaced))
+                        .font(.ui(9))
                         .tracking(1)
                     Text("(\(history.count))")
-                        .font(.system(size: 9, design: .monospaced))
+                        .font(.ui(9))
                 }
                 .foregroundColor(theme.textFaint)
             }
@@ -1156,11 +1156,11 @@ struct PasswordHistorySection: View {
                         HStack(spacing: 8) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(revealedID == entry.id ? entry.password : String(repeating: "\u{2022}", count: 14))
-                                    .font(.system(size: 11, design: .monospaced))
+                                    .font(.mono(11))
                                     .foregroundColor(revealedID == entry.id ? theme.text : theme.textSecondary)
                                     .lineLimit(1)
                                 Text(entry.changedAt.formatted(.dateTime.month(.abbreviated).day().year().hour().minute()))
-                                    .font(.system(size: 9, design: .monospaced))
+                                    .font(.ui(9))
                                     .foregroundColor(theme.textGhost)
                             }
                             Spacer()
@@ -1206,7 +1206,7 @@ struct MarkdownTextView: View {
         if var attributed = try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
             let _ = Self.applyHighlight(to: &attributed, query: highlightText, theme: theme)
             Text(attributed)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.ui(12))
                 .foregroundColor(theme.text)
                 .textSelection(.enabled)
                 .lineSpacing(4)
@@ -1246,11 +1246,11 @@ struct DetailFieldRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.ui(9))
                     .foregroundColor(theme.textFaint)
                     .tracking(1)
                 Text(value)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.mono(13))
                     .foregroundColor(valueColor ?? theme.text)
             }
             Spacer()
@@ -1384,18 +1384,18 @@ struct TOTPDisplayRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("2FA CODE")
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.ui(9))
                     .foregroundColor(theme.textFaint)
                     .tracking(1)
                 HStack(spacing: 8) {
                     Text(formatCode(code))
-                        .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                        .font(.mono(18, weight: .semibold))
                         .foregroundColor(theme.accentBlueLt)
                     HStack(spacing: 3) {
                         TOTPCountdownArc(remaining: remaining, period: 30)
                             .frame(width: 16, height: 16)
                         Text("\(remaining)s")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .font(.ui(10, weight: .medium))
                             .foregroundColor(remaining <= 5 ? theme.accentRed : theme.textSecondary)
                     }
                 }

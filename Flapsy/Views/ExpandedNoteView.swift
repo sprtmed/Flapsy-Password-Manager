@@ -31,7 +31,7 @@ struct ExpandedNoteView: View {
                         Text("\u{2190}")
                             .font(.system(size: 11))
                         Text("Back")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                     }
                     .foregroundColor(theme.textSecondary)
                     .padding(.horizontal, 12)
@@ -64,7 +64,7 @@ struct ExpandedNoteView: View {
             if readOnly {
                 ScrollView {
                     Text(text)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                         .lineSpacing(3)
                         .textSelection(.enabled)
@@ -92,7 +92,7 @@ struct ExpandedNoteView: View {
                     HStack(spacing: 8) {
                         Button(action: onSave) {
                             Text("Save")
-                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .font(.ui(12, weight: .semibold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 8)
@@ -110,7 +110,7 @@ struct ExpandedNoteView: View {
                         if let onCancel = onCancel {
                             Button(action: onCancel) {
                                 Text("Cancel")
-                                    .font(.system(size: 12, design: .monospaced))
+                                    .font(.ui(12))
                                     .foregroundColor(theme.textSecondary)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 8)

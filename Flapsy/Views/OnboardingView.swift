@@ -96,10 +96,10 @@ struct OnboardingView: View {
 
             VStack(spacing: 8) {
                 Text("Welcome to Flapsy")
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
+                    .font(.ui(20, weight: .bold))
                     .foregroundColor(theme.text)
                 Text("Your passwords, encrypted locally.")
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.textSecondary)
             }
 
@@ -144,7 +144,7 @@ struct OnboardingView: View {
                 .foregroundColor(theme.accentBlueLt)
                 .frame(width: 20)
             Text(text)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.ui(12))
                 .foregroundColor(theme.textSecondary)
             Spacer()
         }
@@ -162,10 +162,10 @@ struct OnboardingView: View {
 
             VStack(spacing: 6) {
                 Text("Create Master Password")
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .font(.ui(16, weight: .bold))
                     .foregroundColor(theme.text)
                 Text("This is the only password you\u{2019}ll need to remember")
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.ui(12))
                     .foregroundColor(theme.textMuted)
                     .multilineTextAlignment(.center)
             }
@@ -176,13 +176,13 @@ struct OnboardingView: View {
                 ZStack(alignment: .leading) {
                     if vault.setupPassword.isEmpty {
                         Text("At least 12 characters")
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.ui(13))
                             .foregroundColor(theme.textMuted)
                             .padding(10)
                     }
                     SecureField("", text: $vault.setupPassword)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                         .padding(10)
                 }
@@ -212,7 +212,7 @@ struct OnboardingView: View {
                         .frame(height: 4)
 
                         Text("\(PasswordStrength.label(for: strength)) \(strength)%")
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .font(.ui(10, weight: .semibold))
                             .foregroundColor(PasswordStrength.color(for: strength))
                             .fixedSize()
                     }
@@ -225,13 +225,13 @@ struct OnboardingView: View {
                 ZStack(alignment: .leading) {
                     if vault.setupConfirm.isEmpty {
                         Text("Re-enter password")
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.ui(13))
                             .foregroundColor(theme.textMuted)
                             .padding(10)
                     }
                     SecureField("", text: $vault.setupConfirm)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                         .padding(10)
                 }
@@ -253,11 +253,11 @@ struct OnboardingView: View {
                 if !vault.setupConfirm.isEmpty {
                     if vault.setupConfirm == vault.setupPassword {
                         Text("\u{2713} Passwords match")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.accentGreen)
                     } else {
                         Text("\u{2715} Passwords do not match")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.accentRed)
                     }
                 }
@@ -265,7 +265,7 @@ struct OnboardingView: View {
 
             if !vault.setupError.isEmpty {
                 Text(vault.setupError)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.accentRed)
                     .multilineTextAlignment(.center)
             }
@@ -303,7 +303,7 @@ struct OnboardingView: View {
             .disabled(!canCreate || vault.isLoading)
 
             Text("Your password never leaves this device.")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textGhost)
                 .multilineTextAlignment(.center)
 
@@ -334,17 +334,17 @@ struct OnboardingView: View {
 
             VStack(spacing: 6) {
                 Text("Enable Touch ID?")
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .font(.ui(16, weight: .bold))
                     .foregroundColor(theme.text)
                 Text("Unlock your vault faster with Touch ID.\nYour master password is never stored.")
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.ui(12))
                     .foregroundColor(theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
 
             HStack {
                 Text("Enable Touch ID")
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
                 Spacer()
                 FlapsyToggle(isOn: $enableTouchID)
@@ -398,10 +398,10 @@ struct OnboardingView: View {
 
             VStack(spacing: 6) {
                 Text("Import Existing Passwords?")
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .font(.ui(16, weight: .bold))
                     .foregroundColor(theme.text)
                 Text("Bring your passwords from another manager")
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.ui(12))
                     .foregroundColor(theme.textSecondary)
             }
 
@@ -419,7 +419,7 @@ struct OnboardingView: View {
                     }
                 }) {
                     Text("Skip")
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .font(.ui(13, weight: .medium))
                         .foregroundColor(theme.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -471,11 +471,11 @@ struct OnboardingView: View {
     private func importFormatRow(_ name: String, detail: String) -> some View {
         HStack {
             Text(name)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .font(.ui(12, weight: .medium))
                 .foregroundColor(theme.text)
             Spacer()
             Text(detail)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textFaint)
         }
         .padding(.horizontal, 14)
@@ -501,10 +501,10 @@ struct OnboardingView: View {
 
             VStack(spacing: 6) {
                 Text("You\u{2019}re All Set!")
-                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                    .font(.ui(18, weight: .bold))
                     .foregroundColor(theme.text)
                 Text("Your vault is ready with AES-256 encryption")
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.ui(12))
                     .foregroundColor(theme.textSecondary)
             }
 

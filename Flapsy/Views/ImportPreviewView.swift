@@ -21,7 +21,7 @@ struct ImportPreviewView: View {
             // Header
             HStack {
                 Text("\u{1F4E5} Import Preview")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .font(.ui(14, weight: .bold))
                     .foregroundColor(theme.text)
                 Spacer()
                 Button(action: { vault.cancelImport() }) {
@@ -46,7 +46,7 @@ struct ImportPreviewView: View {
             // Error message
             if !vault.importError.isEmpty {
                 Text("\u{2715} \(vault.importError)")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.accentRed)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -63,7 +63,7 @@ struct ImportPreviewView: View {
                 .progressViewStyle(.circular)
 
             Text(vault.importProgress.isEmpty ? "Importing\u{2026}" : vault.importProgress)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.ui(12))
                 .foregroundColor(theme.textSecondary)
                 .animation(.none, value: vault.importProgress)
         }
@@ -76,19 +76,19 @@ struct ImportPreviewView: View {
     private var backupPasswordSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("This is an encrypted Flapsy backup. Enter the export password to decrypt it.")
-                .font(.system(size: 12, design: .monospaced))
+                .font(.ui(12))
                 .foregroundColor(theme.textSecondary)
 
             ZStack(alignment: .leading) {
                 if backupPassword.isEmpty {
                     Text("Backup password")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.textMuted)
                         .padding(10)
                 }
                 SecureField("", text: $backupPassword)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
                     .padding(10)
             }
@@ -139,10 +139,10 @@ struct ImportPreviewView: View {
             // Format detected
             HStack(spacing: 8) {
                 Text("Format:")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.textFaint)
                 Text(preview.format.rawValue)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.ui(11, weight: .medium))
                     .foregroundColor(theme.accentBlueLt)
             }
 
@@ -168,7 +168,7 @@ struct ImportPreviewView: View {
             // Total
             let totalUnits = preview.totalCount + preview.appNoteCount
             Text("Found \(totalUnits) item\(totalUnits == 1 ? "" : "s") to import")
-                .font(.system(size: 12, design: .monospaced))
+                .font(.ui(12))
                 .foregroundColor(theme.textSecondary)
 
             // Duplicate info
@@ -177,7 +177,7 @@ struct ImportPreviewView: View {
             ).count
             if dupeCount > 0 {
                 Text("\(dupeCount) duplicate\(dupeCount == 1 ? "" : "s") will be skipped")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.textMuted)
             }
 
@@ -188,7 +188,7 @@ struct ImportPreviewView: View {
             HStack(spacing: 8) {
                 Button(action: { vault.cancelImport() }) {
                     Text("Cancel")
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .font(.ui(13, weight: .medium))
                         .foregroundColor(theme.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -229,7 +229,7 @@ struct ImportPreviewView: View {
     private var categoryPicker: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text("ASSIGN CATEGORY")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(.ui(10, weight: .medium))
                 .foregroundColor(theme.textFaint)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -237,7 +237,7 @@ struct ImportPreviewView: View {
                     // "Keep original" option
                     Button(action: { vault.importCategory = "" }) {
                         Text("Keep original")
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.ui(12))
                             .foregroundColor(vault.importCategory.isEmpty ? theme.accentBlueLt : theme.textMuted)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 6)
@@ -260,7 +260,7 @@ struct ImportPreviewView: View {
                                     .fill(Color(hex: cat.color))
                                     .frame(width: 8, height: 8)
                                 Text(cat.label)
-                                    .font(.system(size: 12, design: .monospaced))
+                                    .font(.ui(12))
                                     .foregroundColor(vault.importCategory == cat.key ? theme.accentBlueLt : theme.textMuted)
                             }
                             .padding(.horizontal, 14)
@@ -287,11 +287,11 @@ struct ImportPreviewView: View {
             Text(icon)
                 .font(.system(size: 14))
             Text(label)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.text)
             Spacer()
             Text("\(count)")
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .font(.ui(13, weight: .semibold))
                 .foregroundColor(theme.accentBlueLt)
         }
     }

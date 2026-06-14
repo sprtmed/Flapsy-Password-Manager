@@ -114,26 +114,26 @@ struct VaultHealthView: View {
 
                 VStack(spacing: 2) {
                     Text("\(vault.healthScore)")
-                        .font(.system(size: 24, weight: .bold, design: .monospaced))
+                        .font(.ui(24, weight: .bold))
                         .foregroundColor(scoreColor)
                     Text("%")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.ui(10))
                         .foregroundColor(theme.textFaint)
                 }
             }
 
             Text(scoreLabel)
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .font(.ui(13, weight: .semibold))
                 .foregroundColor(scoreColor)
 
             let loginCount = vault.activeItems.filter { $0.type == .login }.count
             Text("\(loginCount) login\(loginCount == 1 ? "" : "s") analyzed")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.ui(10))
                 .foregroundColor(theme.textFaint)
 
             if !vault.compromisedItemIDs.isEmpty {
                 Text("\(vault.compromisedItemIDs.count) compromised")
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .font(.ui(10, weight: .semibold))
                     .foregroundColor(theme.accentRed)
             }
         }
@@ -180,25 +180,25 @@ struct VaultHealthView: View {
                             }
                             if !compact {
                                 Text(option.rawValue)
-                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                    .font(.ui(10, weight: .medium))
                                     .lineLimit(1)
                                     .fixedSize(horizontal: isHovered || isActive, vertical: false)
                             }
                             if compact {
                                 if option == .all {
                                     Text(option.rawValue)
-                                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                        .font(.ui(10, weight: .medium))
                                         .fixedSize()
                                 }
                                 if count > 0 {
                                     Text("\(count)")
-                                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                        .font(.ui(9, weight: .bold))
                                         .foregroundColor(isActive ? filterColor(for: option) : theme.textFaint)
                                         .fixedSize()
                                 }
                             } else if option != .all && count > 0 {
                                 Text("\(count)")
-                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .font(.ui(9, weight: .bold))
                                     .foregroundColor(isActive ? filterColor(for: option) : theme.textFaint)
                                     .fixedSize()
                             }
@@ -266,7 +266,7 @@ struct VaultHealthView: View {
                 .controlSize(.small)
                 .tint(theme.accentBlueLt)
             Text("Checking passwords against breach database\u{2026}")
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -294,18 +294,18 @@ struct VaultHealthView: View {
                                 .frame(width: 24, height: 24)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(item.name)
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .font(.ui(12, weight: .medium))
                                     .foregroundColor(theme.text)
                                     .lineLimit(1)
                                 Text(item.subtitle)
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .font(.ui(10))
                                     .foregroundColor(theme.textFaint)
                                     .lineLimit(1)
                             }
                             Spacer()
                             if let count = vault.breachOccurrences[item.id] {
                                 Text("\(formatBreachCount(count))x")
-                                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                    .font(.ui(10, weight: .semibold))
                                     .foregroundColor(theme.accentRed)
                             }
                             Text("\u{203A}")
@@ -333,7 +333,7 @@ struct VaultHealthView: View {
                     .font(.system(size: 9))
                     .foregroundColor(theme.textGhost)
                 Text("Only SHA-1 prefixes (5 chars) are sent \u{2014} full passwords never leave your device.")
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.ui(9))
                     .foregroundColor(theme.textGhost)
             }
         }
@@ -364,7 +364,7 @@ struct VaultHealthView: View {
                             .font(.system(size: 10))
                             .foregroundColor(color)
                         Text(groupLabel(group))
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                             .foregroundColor(theme.textSecondary)
                             .lineLimit(1)
                     }
@@ -376,11 +376,11 @@ struct VaultHealthView: View {
                                     .frame(width: 24, height: 24)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(item.name)
-                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                        .font(.ui(12, weight: .medium))
                                         .foregroundColor(theme.text)
                                         .lineLimit(1)
                                     Text(item.subtitle)
-                                        .font(.system(size: 10, design: .monospaced))
+                                        .font(.ui(10))
                                         .foregroundColor(theme.textFaint)
                                         .lineLimit(1)
                                 }
@@ -423,11 +423,11 @@ struct VaultHealthView: View {
                                 .frame(width: 24, height: 24)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(item.name)
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .font(.ui(12, weight: .medium))
                                     .foregroundColor(theme.text)
                                     .lineLimit(1)
                                 Text(item.subtitle)
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .font(.ui(10))
                                     .foregroundColor(theme.textFaint)
                                     .lineLimit(1)
                             }
@@ -435,7 +435,7 @@ struct VaultHealthView: View {
                             if let pw = item.password {
                                 let s = PasswordStrength.calculate(pw)
                                 Text("\(s)%")
-                                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                    .font(.ui(10, weight: .semibold))
                                     .foregroundColor(PasswordStrength.color(for: s))
                             }
                             Text("\u{203A}")
@@ -468,10 +468,10 @@ struct VaultHealthView: View {
                 .font(.system(size: 28))
                 .foregroundColor(theme.accentGreen)
             Text("All Clear")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .font(.ui(14, weight: .bold))
                 .foregroundColor(theme.accentGreen)
             Text("No issues found in your vault")
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textFaint)
         }
         .frame(maxWidth: .infinity)

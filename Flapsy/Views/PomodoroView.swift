@@ -275,12 +275,12 @@ private struct ClassicPomodoroView: View {
 
             VStack(spacing: 6) {
                 Text(timer.formatTime(timer.timeRemaining))
-                    .font(.system(size: 56, weight: .light, design: .monospaced))
+                    .font(.ui(56, weight: .light))
                     .foregroundColor(theme.text)
                     .monospacedDigit()
 
                 Text(timer.sessionType == .work ? "Focus Time" : "Break Time")
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.ui(12))
                     .foregroundColor(theme.textSecondary)
             }
             .padding(.vertical, 16)
@@ -292,7 +292,7 @@ private struct ClassicPomodoroView: View {
                 .padding(.vertical, 8)
 
             Text("Session \(timer.workSessionNumber) \u{2022} \(timer.sessionsUntilLongBreak) until long break")
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textMuted)
                 .padding(.bottom, 8)
         }
@@ -305,9 +305,9 @@ private struct ClassicPomodoroView: View {
                 Button(action: { timer.selectSession(type) }) {
                     VStack(spacing: 2) {
                         Text(timer.sessionLabel(type))
-                            .font(.system(size: 11, weight: isSelected ? .semibold : .regular, design: .monospaced))
+                            .font(.ui(11, weight: isSelected ? .semibold : .regular))
                         Text("\(timer.sessionMinutes(type)) min")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(isSelected ? theme.accentBlue.opacity(0.8) : theme.textMuted)
                     }
                     .foregroundColor(isSelected ? theme.accentBlue : theme.textSecondary)
@@ -357,7 +357,7 @@ private struct ClassicPomodoroView: View {
                 Image(systemName: icon)
                     .font(.system(size: 10))
                 Text(label)
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .font(.ui(13, weight: .medium))
             }
             .foregroundColor(fg)
             .padding(.horizontal, 24)
@@ -387,15 +387,15 @@ private struct BlockTimerView: View {
                 // Heading
                 VStack(spacing: 4) {
                     Text("Build momentum.")
-                        .font(.system(size: 20, weight: .bold, design: .monospaced))
+                        .font(.ui(20, weight: .bold))
                         .foregroundColor(theme.text)
 
                     Text("\(timer.completedBlocks) of \(timer.blockGoal) blocks today")
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(.ui(12))
                         .foregroundColor(theme.textSecondary)
 
                     Text("(\(timer.totalBlockMinutes) min total)")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.ui(11))
                         .foregroundColor(theme.textMuted)
                 }
 
@@ -405,7 +405,7 @@ private struct BlockTimerView: View {
                 // Pending prompt
                 if timer.pendingBlockIndex != nil {
                     Text("Tap the glowing block to claim it!")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .font(.ui(12, weight: .medium))
                         .foregroundColor(theme.accentGreen)
                         .padding(.vertical, 4)
                 }
@@ -414,12 +414,12 @@ private struct BlockTimerView: View {
                 if timer.blockState == .running || timer.blockState == .paused {
                     VStack(spacing: 4) {
                         Text(timer.formatTime(timer.blockTimeRemaining))
-                            .font(.system(size: 32, weight: .light, design: .monospaced))
+                            .font(.ui(32, weight: .light))
                             .foregroundColor(theme.text)
                             .monospacedDigit()
 
                         Text("Block \(timer.completedBlocks + 1) of \(timer.blockGoal)")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                             .foregroundColor(theme.textMuted)
                     }
                     .padding(.vertical, 4)
@@ -437,7 +437,7 @@ private struct BlockTimerView: View {
 
                 // Footer
                 Text(footerText)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.textMuted)
                     .padding(.top, 4)
                     .padding(.bottom, 8)
@@ -523,7 +523,7 @@ private struct BlockTimerView: View {
         VStack(spacing: 10) {
             VStack(spacing: 4) {
                 Text("Daily Goal (Blocks)")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textMuted)
 
                 HStack(spacing: 8) {
@@ -537,7 +537,7 @@ private struct BlockTimerView: View {
 
             VStack(spacing: 4) {
                 Text("Daily Goal (Hours)")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textMuted)
 
                 HStack(spacing: 8) {
@@ -564,7 +564,7 @@ private struct BlockTimerView: View {
     private func pillButton(label: String, isSelected: Bool, wide: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 12, weight: isSelected ? .semibold : .regular, design: .monospaced))
+                .font(.ui(12, weight: isSelected ? .semibold : .regular))
                 .foregroundColor(isSelected ? .white : theme.textSecondary)
                 .padding(.horizontal, wide ? 20 : 14)
                 .padding(.vertical, 6)
@@ -584,7 +584,7 @@ private struct BlockTimerView: View {
                 if allDone {
                     VStack(spacing: 8) {
                         Text("Goal Complete!")
-                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                            .font(.ui(15, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -596,7 +596,7 @@ private struct BlockTimerView: View {
                                 Image(systemName: "arrow.counterclockwise")
                                     .font(.system(size: 11))
                                 Text("Start Over")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(.ui(13, weight: .medium))
                             }
                             .foregroundColor(theme.textSecondary)
                             .frame(maxWidth: .infinity)
@@ -612,7 +612,7 @@ private struct BlockTimerView: View {
                         timer.startBlock()
                     }) {
                         Text("Start \(timer.blockDuration) min")
-                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                            .font(.ui(15, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -629,7 +629,7 @@ private struct BlockTimerView: View {
                         Image(systemName: "pause.fill")
                             .font(.system(size: 12))
                         Text("Pause")
-                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                            .font(.ui(15, weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -646,7 +646,7 @@ private struct BlockTimerView: View {
                             Image(systemName: "play.fill")
                                 .font(.system(size: 12))
                             Text("Resume")
-                                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                                .font(.ui(15, weight: .semibold))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -791,13 +791,13 @@ private struct CelebrationScreen: View {
                 }
 
                 Text(timer.celebrationText)
-                    .font(.system(size: 28, weight: .bold, design: .monospaced))
+                    .font(.ui(28, weight: .bold))
                     .foregroundColor(theme.text)
                     .opacity(textOpacity)
                     .scaleEffect(textOpacity > 0 ? 1.0 : 0.8)
 
                 Text("Block \(timer.completedBlocks) of \(timer.blockGoal)")
-                    .font(.system(size: 14, design: .monospaced))
+                    .font(.ui(14))
                     .foregroundColor(theme.textSecondary)
                     .opacity(textOpacity)
 
@@ -826,7 +826,7 @@ private struct CelebrationScreen: View {
                 .opacity(textOpacity)
 
                 Text("\(timer.completedBlocks * timer.blockDuration) min done today")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.ui(11))
                     .foregroundColor(theme.textMuted)
                     .opacity(textOpacity)
 
@@ -834,7 +834,7 @@ private struct CelebrationScreen: View {
 
                 Button(action: { timer.dismissCelebration() }) {
                     Text("Continue")
-                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                        .font(.ui(15, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)

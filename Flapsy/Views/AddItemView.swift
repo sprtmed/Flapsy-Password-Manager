@@ -59,7 +59,7 @@ struct AddItemView: View {
             .animation(.spring(response: 0.4, dampingFraction: 0.6), value: vault.newSaved)
 
             Text("Saved to Vault")
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                .font(.ui(14, weight: .semibold))
                 .foregroundColor(theme.accentGreen)
         }
         .frame(maxWidth: .infinity)
@@ -110,7 +110,7 @@ struct AddItemView: View {
                                         .fill(Color(hex: cat.color))
                                         .frame(width: 8, height: 8)
                                     Text(cat.label)
-                                        .font(.system(size: 12, design: .monospaced))
+                                        .font(.ui(12))
                                         .foregroundColor(vault.newCategory == cat.key ? theme.accentBlueLt : theme.textMuted)
                                 }
                                 .padding(.horizontal, 14)
@@ -180,13 +180,13 @@ struct AddItemView: View {
                         ZStack(alignment: .leading) {
                             if vault.newPassword.isEmpty {
                                 Text("Enter or generate\u{2026}")
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(.ui(13))
                                     .foregroundColor(theme.textMuted)
                                     .padding(10)
                             }
                             SecureField("", text: $vault.newPassword)
                                 .textFieldStyle(.plain)
-                                .font(.system(size: 13, design: .monospaced))
+                                .font(.ui(13))
                                 .foregroundColor(theme.text)
                                 .padding(10)
                         }
@@ -199,7 +199,7 @@ struct AddItemView: View {
                     }
                     Button(action: { vault.showNewPassword.toggle() }) {
                         Text(vault.showNewPassword ? "Hide" : "Show")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                             .foregroundColor(theme.textFaint)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 4)
@@ -212,7 +212,7 @@ struct AddItemView: View {
                     vault.newPassword = GeneratorViewModel.secureRandomPassword()
                 }) {
                     Text("\u{26A1} Gen")
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .font(.ui(12, weight: .semibold))
                         .foregroundColor(theme.accentPurple)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
@@ -275,7 +275,7 @@ struct AddItemView: View {
                     .frame(height: 4)
 
                     Text("\(PasswordStrength.label(for: strength)) \(strength)%")
-                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .font(.ui(10, weight: .semibold))
                         .foregroundColor(PasswordStrength.color(for: strength))
                 }
                 .padding(.top, 4)
@@ -289,7 +289,7 @@ struct AddItemView: View {
     private var cardFields: some View {
         HStack {
             Text("Card Type")
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.text)
             Spacer()
             FlapsyDropdown(
@@ -327,13 +327,13 @@ struct AddItemView: View {
                 ZStack(alignment: .leading) {
                     if vault.newCvv.isEmpty {
                         Text("\u{2022}\u{2022}\u{2022}")
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.ui(13))
                             .foregroundColor(theme.textMuted)
                             .padding(10)
                     }
                     SecureField("", text: $vault.newCvv)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.text)
                         .padding(10)
                         .onChange(of: vault.newCvv) { val in
@@ -428,7 +428,7 @@ struct FormLabel: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 10, design: .monospaced))
+            .font(.ui(10))
             .foregroundColor(theme.textSecondary)
             .tracking(1)
     }
@@ -443,13 +443,13 @@ struct FormTextField: View {
         ZStack(alignment: .leading) {
             if text.isEmpty {
                 Text(placeholder)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.textSecondary)
                     .padding(10)
             }
             TextField("", text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.text)
                 .padding(10)
         }
@@ -471,7 +471,7 @@ struct TypePill: View {
     var body: some View {
         Button(action: { selectedType = type }) {
             Text(label)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.ui(12))
                 .foregroundColor(selectedType == type ? theme.accentBlueLt : theme.textMuted)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 7)

@@ -10,7 +10,7 @@ struct ToastView: View {
 
     var body: some View {
         Text("\(message) \u{00B7} clears in \(remainingSeconds)s")
-            .font(.system(size: 10, design: .monospaced))
+            .font(.ui(10))
             .foregroundColor(theme.textMuted)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)

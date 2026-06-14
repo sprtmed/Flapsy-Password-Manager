@@ -35,7 +35,7 @@ struct ContentView: View {
                 VStack {
                     Spacer()
                     Text(toast)
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .font(.ui(12, weight: .semibold))
                         .foregroundColor(theme.bg)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
@@ -51,7 +51,7 @@ struct ContentView: View {
         .ignoresSafeArea(.container, edges: .top)
         .frame(minWidth: 320, maxWidth: 420, minHeight: 480, maxHeight: 650)
         .environment(\.theme, theme)
-        .font(.system(.body, design: .monospaced))
+        .font(.system(.body))
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.currentScreen)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.toastMessage)
     }
@@ -241,7 +241,7 @@ struct VaultContainerView: View {
                     .font(.system(size: 14))
                     .foregroundColor(theme.text)
                 Text(panelTitle)
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .font(.ui(14, weight: .bold))
                     .foregroundColor(theme.text)
             }
             Spacer()
@@ -251,7 +251,7 @@ struct VaultContainerView: View {
                         Text("\u{2190}")
                             .font(.system(size: 11))
                         Text("Back")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                     }
                     .foregroundColor(theme.textSecondary)
                     .padding(.horizontal, 12)

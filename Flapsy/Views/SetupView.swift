@@ -38,10 +38,10 @@ struct SetupView: View {
                     // Title
                     VStack(spacing: 6) {
                         Text("Welcome to Flapsy")
-                            .font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .font(.ui(18, weight: .bold))
                             .foregroundColor(theme.text)
                         Text("Create a master password to protect your vault")
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.ui(12))
                             .foregroundColor(theme.textMuted)
                             .multilineTextAlignment(.center)
                     }
@@ -52,13 +52,13 @@ struct SetupView: View {
                         ZStack(alignment: .leading) {
                             if vault.setupPassword.isEmpty {
                                 Text("At least 12 characters")
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(.ui(13))
                                     .foregroundColor(theme.textMuted)
                                     .padding(10)
                             }
                             SecureField("", text: $vault.setupPassword)
                                 .textFieldStyle(.plain)
-                                .font(.system(size: 13, design: .monospaced))
+                                .font(.ui(13))
                                 .foregroundColor(theme.text)
                                 .padding(10)
                         }
@@ -88,7 +88,7 @@ struct SetupView: View {
                                 .frame(height: 4)
 
                                 Text("\(PasswordStrength.label(for: strength)) \(strength)%")
-                                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                    .font(.ui(10, weight: .semibold))
                                     .foregroundColor(PasswordStrength.color(for: strength))
                                     .fixedSize()
                             }
@@ -101,13 +101,13 @@ struct SetupView: View {
                         ZStack(alignment: .leading) {
                             if vault.setupConfirm.isEmpty {
                                 Text("Re-enter password")
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(.ui(13))
                                     .foregroundColor(theme.textMuted)
                                     .padding(10)
                             }
                             SecureField("", text: $vault.setupConfirm)
                                 .textFieldStyle(.plain)
-                                .font(.system(size: 13, design: .monospaced))
+                                .font(.ui(13))
                                 .foregroundColor(theme.text)
                                 .padding(10)
                         }
@@ -128,11 +128,11 @@ struct SetupView: View {
                         if !vault.setupConfirm.isEmpty {
                             if vault.setupConfirm == vault.setupPassword {
                                 Text("\u{2713} Passwords match")
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .font(.ui(10))
                                     .foregroundColor(theme.accentGreen)
                             } else {
                                 Text("\u{2715} Passwords do not match")
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .font(.ui(10))
                                     .foregroundColor(theme.accentRed)
                             }
                         }
@@ -141,7 +141,7 @@ struct SetupView: View {
                     // Error
                     if !vault.setupError.isEmpty {
                         Text(vault.setupError)
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.ui(11))
                             .foregroundColor(theme.accentRed)
                             .multilineTextAlignment(.center)
                     }
@@ -181,18 +181,18 @@ struct SetupView: View {
                     // Security badges
                     HStack(spacing: 16) {
                         Label("AES-256", systemImage: "diamond.fill")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.textGhost)
                         Label("Argon2id", systemImage: "diamond.fill")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.textGhost)
                         Label("Secret Key", systemImage: "diamond.fill")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                             .foregroundColor(theme.textGhost)
                     }
 
                     Text("Your password never leaves this device.\nAll data is encrypted locally with a Secret Key.")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.ui(10))
                         .foregroundColor(theme.textGhost)
                         .multilineTextAlignment(.center)
 

@@ -29,10 +29,10 @@ struct TrashView: View {
                 .font(.system(size: 28))
                 .foregroundColor(theme.textGhost)
             Text("Trash is empty")
-                .font(.system(size: 13, design: .monospaced))
+                .font(.ui(13))
                 .foregroundColor(theme.textFaint)
             Text("Deleted items appear here for 30 days")
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textGhost)
             Spacer()
         }
@@ -42,12 +42,12 @@ struct TrashView: View {
     private var header: some View {
         HStack {
             Text("\(vault.trashedItems.count) deleted item\(vault.trashedItems.count == 1 ? "" : "s")")
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(11))
                 .foregroundColor(theme.textFaint)
             Spacer()
             Button(action: { showEmptyConfirmation = true }) {
                 Text("Empty Trash")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.ui(11, weight: .medium))
                     .foregroundColor(theme.accentRed)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -90,12 +90,12 @@ struct TrashView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .font(.ui(13, weight: .semibold))
                     .foregroundColor(theme.textSecondary)
                     .lineLimit(1)
                 if let deletedAt = item.deletedAt {
                     Text(daysRemaining(deletedAt))
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.ui(10))
                         .foregroundColor(theme.textGhost)
                 }
             }

@@ -141,12 +141,12 @@ struct VaultListView: View {
             ZStack(alignment: .leading) {
                 if vault.searchText.isEmpty {
                     Text("Search vault\u{2026}  \u{2318}K")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(.ui(13))
                         .foregroundColor(theme.textSecondary)
                 }
                 TextField("", text: $vault.searchText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.ui(13))
                     .foregroundColor(theme.text)
                     .focused($isSearchFieldFocused)
             }
@@ -261,7 +261,7 @@ struct VaultListView: View {
             ForEach(SortOption.allCases, id: \.self) { option in
                 Button(action: { vault.sortOption = option }) {
                     Text(option.rawValue)
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(.ui(10, weight: .medium))
                         .foregroundColor(vault.sortOption == option ? theme.accentBlueLt : theme.textGhost)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
@@ -286,7 +286,7 @@ struct VaultListView: View {
                 }
                 if vault.filteredItems.isEmpty {
                     Text("No items found")
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(.ui(12))
                         .foregroundColor(theme.textFaint)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 30)
@@ -303,7 +303,7 @@ struct VaultListView: View {
         VStack(spacing: 4) {
             HStack {
                 Text("\(vault.activeItems.count) items \u{00B7} AES-256 \u{00B7} v\(updateCheck.currentVersion)")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textGhost)
                 Spacer()
                 if !vault.trashedItems.isEmpty {
@@ -312,14 +312,14 @@ struct VaultListView: View {
                             Image(systemName: "trash")
                                 .font(.system(size: 9))
                             Text("\(vault.trashedItems.count)")
-                                .font(.system(size: 10, design: .monospaced))
+                                .font(.ui(10))
                         }
                         .foregroundColor(theme.textGhost)
                     }
                     .buttonStyle(.hand)
                 }
                 Text("Auto-lock: \(settings.autoLockEnabled ? "\(Int(settings.autoLockMinutes))m" : "Off")")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(10))
                     .foregroundColor(theme.textGhost)
             }
             if updateCheck.updateAvailable, let version = updateCheck.latestVersion {
@@ -332,7 +332,7 @@ struct VaultListView: View {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 9))
                         Text("v\(version) available — download update")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.ui(10))
                     }
                     .foregroundColor(theme.accentBlueLt)
                 }
@@ -369,11 +369,11 @@ struct VaultItemRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 highlightedText(item.name, query: searchQuery)
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .font(.ui(13, weight: .semibold))
                     .foregroundColor(theme.text)
                     .lineLimit(1)
                 highlightedText(item.subtitle, query: searchQuery)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.mono(11))
                     .foregroundColor(theme.textFaint)
                     .lineLimit(1)
             }
@@ -408,7 +408,7 @@ struct VaultItemRow: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(item.lastUsedDisplay)
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.mono(10))
                     .foregroundColor(theme.textFaint)
 
                 if item.type == .login, let password = item.password {
@@ -639,7 +639,7 @@ private struct QuickPrimaryButton: View {
                 Image(systemName: copied ? "checkmark" : icon)
                     .font(.system(size: 11, weight: .semibold))
                 Text(copied ? "Copied" : label)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.ui(11, weight: .semibold))
             }
             .foregroundColor(.white)
             .padding(.horizontal, 10)
@@ -726,7 +726,7 @@ struct FilterPill: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .font(.ui(11, weight: .medium))
                 .foregroundColor(isActive ? theme.accentBlueLt : theme.textMuted)
                 .fixedSize()
                 .padding(.horizontal, 12)
@@ -755,7 +755,7 @@ struct CategoryPill: View {
                     .fill(Color(hex: colorHex))
                     .frame(width: 8, height: 8)
                 Text(label)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.ui(11, weight: .medium))
                     .foregroundColor(isActive ? theme.accentBlueLt : theme.textMuted)
             }
             .fixedSize()
