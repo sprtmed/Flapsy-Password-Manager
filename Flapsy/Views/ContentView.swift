@@ -49,7 +49,7 @@ struct ContentView: View {
             }
         }
         .ignoresSafeArea(.container, edges: .top)
-        .frame(minWidth: 360, maxWidth: 420, minHeight: 480, maxHeight: 650)
+        .frame(minWidth: 320, maxWidth: 420, minHeight: 480, maxHeight: 650)
         .environment(\.theme, theme)
         .font(.system(.body))
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.currentScreen)
@@ -66,6 +66,11 @@ struct VaultContainerView: View {
     enum HeaderMenuKind: Hashable { case new, more }
     @State private var openMenu: HeaderMenuKind? = nil
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
+    @State private var containerWidth: CGFloat = 420
+
+    /// Extra left/right breathing room when the window is narrow. Zero at the
+    /// default/wide width so that view stays pixel-identical.
+    private var sideInset: CGFloat { containerWidth < 380 ? 8 : 0 }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -81,6 +86,7 @@ struct VaultContainerView: View {
                 // Panel content
                 panelContent
             }
+            .padding(.horizontal, sideInset)
 
             // Import preview overlay
             if vault.showImportPreview {
@@ -114,8 +120,14 @@ struct VaultContainerView: View {
                 }
             }
         }
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: ContainerWidthKey.self, value: geo.size.width)
+            }
+        )
         .coordinateSpace(name: "vaultContainer")
         .onPreferenceChange(HeaderMenuAnchorKey.self) { menuAnchors = $0 }
+        .onPreferenceChange(ContainerWidthKey.self) { containerWidth = $0 }
         .ignoresSafeArea(.container, edges: .top)
         .onChange(of: vault.currentPanel) { _ in
             vault.showExpandedNote = false
@@ -399,6 +411,14 @@ private struct HeaderMenuAnchorKey: PreferenceKey {
         nextValue: () -> [VaultContainerView.HeaderMenuKind: CGRect]
     ) {
         value.merge(nextValue()) { $1 }
+    }
+}
+
+/// Tracks the container width so the layout can add side padding only when narrow.
+private struct ContainerWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 420
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
