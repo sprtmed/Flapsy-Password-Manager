@@ -356,6 +356,8 @@ struct VaultItemRow: View {
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
 
+    @State private var isHovered = false
+
     private var isSelected: Bool {
         vault.selectedItemID == item.id
     }
@@ -396,19 +398,6 @@ struct VaultItemRow: View {
                     .help(passwordAgeTooltip)
             }
 
-            if item.type == .login, item.password != nil && !item.password!.isEmpty {
-                Button(action: { vault.copyToClipboard(item.password!, fieldName: "quickcopy-\(item.id)") }) {
-                    Image(systemName: vault.copiedField == "quickcopy-\(item.id)" ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(vault.copiedField == "quickcopy-\(item.id)" ? theme.accentGreen : theme.textFaint)
-                        .frame(width: 24, height: 24)
-                        .background(vault.copiedField == "quickcopy-\(item.id)" ? theme.accentGreen.opacity(0.15) : theme.fieldBg)
-                        .cornerRadius(5)
-                }
-                .buttonStyle(.plain)
-                .help("Copy password")
-            }
-
             Button(action: { vault.toggleFavorite(item.id) }) {
                 Text(item.isFavorite ? "\u{2605}" : "\u{2606}")
                     .font(.system(size: 14))
@@ -443,6 +432,13 @@ struct VaultItemRow: View {
                 .fill(isSelected ? theme.accentBlue : Color.clear)
                 .frame(width: 2)
         }
+        .overlay(alignment: .trailing) {
+            if isHovered && hasQuickActions {
+                quickActionBar
+                    .padding(.trailing, 12)
+                    .transition(.opacity)
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -452,6 +448,107 @@ struct VaultItemRow: View {
                 vault.showCVV = false
                 vault.isEditingItem = false
             }
+        }
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) { isHovered = hovering }
+        }
+    }
+
+    // MARK: - Hover Quick Actions
+
+    private var hasUsername: Bool { !(item.username ?? "").isEmpty }
+    private var hasPassword: Bool { !(item.password ?? "").isEmpty }
+    private var hasURL: Bool { !(item.url ?? "").isEmpty }
+    private var hasCardNumber: Bool { !(item.cardNumber ?? "").isEmpty }
+
+    private var hasQuickActions: Bool {
+        switch item.type {
+        case .login: return hasUsername || hasPassword || hasURL
+        case .card:  return hasCardNumber
+        case .note:  return false
+        }
+    }
+
+    @ViewBuilder
+    private var quickActionBar: some View {
+        HStack(spacing: 4) {
+            switch item.type {
+            case .login:
+                if hasUsername {
+                    quickIconButton(field: "qa-user-\(item.id)", icon: "person", help: "Copy username") {
+                        vault.copyToClipboard(item.username!, fieldName: "qa-user-\(item.id)")
+                    }
+                }
+                if hasPassword {
+                    quickIconButton(field: "qa-pass-\(item.id)", icon: "key", help: "Copy password") {
+                        vault.copyToClipboard(item.password!, fieldName: "qa-pass-\(item.id)")
+                    }
+                }
+                if hasURL {
+                    quickPrimaryButton(label: "Open", icon: "arrow.up.right.square", field: nil, help: "Open \(item.url!)") {
+                        openItemURL()
+                    }
+                }
+            case .card:
+                if hasCardNumber {
+                    quickPrimaryButton(label: "Copy number", icon: "doc.on.doc", field: "qa-card-\(item.id)", help: "Copy card number") {
+                        vault.copyToClipboard(item.cardNumber!, fieldName: "qa-card-\(item.id)")
+                    }
+                }
+            case .note:
+                EmptyView()
+            }
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 9)
+                .fill(theme.cardBg)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9)
+                        .stroke(theme.cardBorder, lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.14), radius: 6, x: 0, y: 2)
+        )
+    }
+
+    private func quickIconButton(field: String, icon: String, help: String, action: @escaping () -> Void) -> some View {
+        let copied = vault.copiedField == field
+        return Button(action: action) {
+            Image(systemName: copied ? "checkmark" : icon)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(copied ? theme.accentGreen : theme.textMuted)
+                .frame(width: 28, height: 28)
+                .background(copied ? theme.accentGreen.opacity(0.15) : theme.fieldBg)
+                .cornerRadius(7)
+        }
+        .buttonStyle(.plain)
+        .help(help)
+    }
+
+    private func quickPrimaryButton(label: String, icon: String, field: String?, help: String, action: @escaping () -> Void) -> some View {
+        let copied = field != nil && vault.copiedField == field
+        return Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: copied ? "checkmark" : icon)
+                    .font(.system(size: 11, weight: .semibold))
+                Text(copied ? "Copied" : label)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .frame(height: 28)
+            .background(theme.accentBlue)
+            .cornerRadius(7)
+        }
+        .buttonStyle(.plain)
+        .help(help)
+    }
+
+    private func openItemURL() {
+        guard let url = item.url, !url.isEmpty else { return }
+        let urlString = url.hasPrefix("http://") || url.hasPrefix("https://") ? url : "https://\(url)"
+        if let openURL = URL(string: urlString) {
+            NSWorkspace.shared.open(openURL)
         }
     }
 
