@@ -686,8 +686,9 @@ struct ItemAvatar: View {
 
     var body: some View {
         ZStack {
+            // Only logins get a colored tile; cards and notes use a neutral tile.
             RoundedRectangle(cornerRadius: size * 0.25)
-                .fill(item.type == .note ? theme.fieldBg : tileColor)
+                .fill(item.type == .login ? tileColor : theme.fieldBg)
                 .frame(width: size, height: size)
 
             switch item.type {
@@ -697,8 +698,8 @@ struct ItemAvatar: View {
                     .foregroundColor(.white)
             case .card:
                 Image(systemName: "creditcard")
-                    .font(.system(size: size * 0.42, weight: .medium))
-                    .foregroundColor(.white)
+                    .font(.system(size: size * 0.46, weight: .regular))
+                    .foregroundColor(theme.textMuted)
             case .note:
                 Image(systemName: "doc.text")
                     .font(.system(size: size * 0.46, weight: .regular))
