@@ -67,10 +67,6 @@ struct VaultContainerView: View {
     @State private var openMenu: HeaderMenuKind? = nil
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
 
-    /// Extra left/right breathing room added to all content so it doesn't hug
-    /// the window edges. Applied at every width.
-    private let sideInset: CGFloat = 8
-
     var body: some View {
         ZStack(alignment: .topLeading) {
             VStack(spacing: 0) {
@@ -85,7 +81,6 @@ struct VaultContainerView: View {
                 // Panel content
                 panelContent
             }
-            .padding(.horizontal, sideInset)
 
             // Import preview overlay
             if vault.showImportPreview {
