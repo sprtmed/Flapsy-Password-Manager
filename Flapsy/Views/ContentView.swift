@@ -187,6 +187,11 @@ struct VaultContainerView: View {
                     }
                     .background(anchorReporter(.new))
 
+                    HeaderIconButton(systemName: "note.text", help: "Notes") {
+                        openMenu = nil
+                        vault.navigateToPanel(.notes)
+                    }
+
                     HeaderIconButton(systemName: "gearshape", help: "Settings") {
                         openMenu = nil
                         vault.navigateToPanel(.settings)
@@ -311,9 +316,6 @@ struct VaultContainerView: View {
                 }
                 HeaderMenuItem(icon: "wand.and.stars", label: "Password generator") {
                     selectMenu { vault.navigateToPanel(.generator) }
-                }
-                HeaderMenuItem(icon: "note.text", label: "Notes") {
-                    selectMenu { vault.navigateToPanel(.notes) }
                 }
                 HeaderMenuItem(icon: "tag", label: "Categories") {
                     selectMenu { vault.navigateToPanel(.tags) }
