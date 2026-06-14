@@ -32,70 +32,71 @@ struct FlapsyTheme {
     let ddBorder: Color
     let ddItemHover: Color
 
+    // Palette from designer token set (indigo accent, warm charcoal surfaces).
     static let dark = FlapsyTheme(
-        bg: Color(hex: "0c0c0e"),
-        dropBg: Color(hex: "18181b"),
-        dropBorder: Color.white.opacity(0.06),
-        text: Color(hex: "e4e4e7"),
-        textSecondary: Color(hex: "a1a1aa"),
-        textMuted: Color(hex: "8a8a93"),
-        textFaint: Color(hex: "6e6e78"),
-        textGhost: Color(hex: "56565f"),
-        textInvisible: Color(hex: "37373d"),
-        inputBg: Color.white.opacity(0.05),
-        inputBorder: Color.white.opacity(0.12),
-        fieldBg: Color.white.opacity(0.04),
-        hoverBg: Color.white.opacity(0.04),
-        activeBg: Color(hex: "3b82f6").opacity(0.08),
-        pillBg: Color(hex: "3b82f6").opacity(0.2),
+        bg: Color(hex: "1d1d22"),                       // --canvas
+        dropBg: Color(hex: "26262d"),                   // --surface (flattened) / --surface-solid
+        dropBorder: Color(hex: "42424c"),               // --hairline-strong
+        text: Color(hex: "f2f2f5"),                     // --ink
+        textSecondary: Color(hex: "b4b4c0"),
+        textMuted: Color(hex: "9c9caa"),                // --muted
+        textFaint: Color(hex: "74747f"),                // --faint
+        textGhost: Color(hex: "5a5a63"),
+        textInvisible: Color(hex: "42424c"),
+        inputBg: Color(hex: "33333c"),                  // --field
+        inputBorder: Color(hex: "42424c"),              // --hairline-strong
+        fieldBg: Color(hex: "33333c"),                  // --field
+        hoverBg: Color(hex: "8b8bf2").opacity(0.10),    // --row-hover
+        activeBg: Color(hex: "2c2c4a"),                 // --accent-soft
+        pillBg: Color(hex: "2c2c4a"),                   // --accent-soft
         toggleOff: Color.white.opacity(0.1),
         toggleThumb: Color.white,
-        cardBg: Color.white.opacity(0.04),
-        cardBorder: Color.white.opacity(0.08),
-        accentBlue: Color(hex: "3b82f6"),
-        accentBlueLt: Color(hex: "60a5fa"),
-        accentPurple: Color(hex: "a855f7"),
-        accentGreen: Color(hex: "34d399"),
-        accentYellow: Color(hex: "fbbf24"),
-        accentRed: Color(hex: "f87171"),
-        focusBorder: Color(hex: "3b82f6").opacity(0.4),
-        selectionBg: Color(hex: "3b82f6").opacity(0.3),
-        ddBg: Color(hex: "1e1e22"),
-        ddBorder: Color.white.opacity(0.1),
-        ddItemHover: Color.white.opacity(0.04)
+        cardBg: Color(hex: "2f2f37"),                   // --raise
+        cardBorder: Color(hex: "36363f"),               // --hairline
+        accentBlue: Color(hex: "8b8bf2"),               // --accent
+        accentBlueLt: Color(hex: "aeaef8"),             // --accent-ink
+        accentPurple: Color(hex: "a78bea"),
+        accentGreen: Color(hex: "4cc47e"),              // --good
+        accentYellow: Color(hex: "e0a83f"),             // --warn
+        accentRed: Color(hex: "ef6259"),                // --bad
+        focusBorder: Color(hex: "8b8bf2").opacity(0.4),
+        selectionBg: Color(hex: "8b8bf2").opacity(0.3),
+        ddBg: Color(hex: "26262d"),                     // --surface-solid
+        ddBorder: Color(hex: "36363f"),                 // --hairline
+        ddItemHover: Color(hex: "8b8bf2").opacity(0.10)
     )
 
     static let light = FlapsyTheme(
-        bg: Color(hex: "d8d8dc"),
-        dropBg: Color(hex: "e2e2e6"),
-        dropBorder: Color.black.opacity(0.10),
-        text: Color(hex: "1a1a1f"),
-        textSecondary: Color(hex: "46464f"),
-        textMuted: Color(hex: "62626b"),
-        textFaint: Color(hex: "8e8e97"),
-        textGhost: Color(hex: "b5b5bd"),
-        textInvisible: Color(hex: "c8c8cf"),
-        inputBg: Color.black.opacity(0.06),
-        inputBorder: Color.black.opacity(0.14),
-        fieldBg: Color.black.opacity(0.04),
-        hoverBg: Color.black.opacity(0.06),
-        activeBg: Color(hex: "2563eb").opacity(0.10),
-        pillBg: Color(hex: "2563eb").opacity(0.16),
+        bg: Color(hex: "f4f4f7"),                       // --canvas
+        dropBg: Color(hex: "eef0fa"),                   // --surface over periwinkle, flattened
+        dropBorder: Color(hex: "dcdce4"),               // --hairline-strong
+        text: Color(hex: "1b1b22"),                     // --ink
+        textSecondary: Color(hex: "5b5b66"),
+        textMuted: Color(hex: "75757f"),                // --muted
+        textFaint: Color(hex: "9a9aa6"),                // --faint
+        textGhost: Color(hex: "b9b9c2"),
+        textInvisible: Color(hex: "d2d2da"),
+        inputBg: Color(hex: "e9eaf2"),                  // --field (cooled for lavender surface)
+        inputBorder: Color(hex: "dcdce4"),              // --hairline-strong
+        fieldBg: Color(hex: "e9eaf2"),                  // --field
+        hoverBg: Color(hex: "5b5bd6").opacity(0.06),    // --row-hover
+        activeBg: Color(hex: "ecedfb"),                 // --accent-soft
+        pillBg: Color(hex: "ecedfb"),                   // --accent-soft
         toggleOff: Color.black.opacity(0.16),
-        toggleThumb: Color(hex: "f0f0f2"),
-        cardBg: Color.black.opacity(0.04),
-        cardBorder: Color.black.opacity(0.10),
-        accentBlue: Color(hex: "2563eb"),
-        accentBlueLt: Color(hex: "3b82f6"),
-        accentPurple: Color(hex: "7c3aed"),
-        accentGreen: Color(hex: "059669"),
-        accentYellow: Color(hex: "d97706"),
-        accentRed: Color(hex: "dc2626"),
-        focusBorder: Color(hex: "2563eb").opacity(0.4),
-        selectionBg: Color(hex: "2563eb").opacity(0.2),
-        ddBg: Color(hex: "e2e2e6"),
-        ddBorder: Color.black.opacity(0.12),
-        ddItemHover: Color.black.opacity(0.06)
+        toggleThumb: Color(hex: "ffffff"),
+        cardBg: Color(hex: "ffffff"),                   // --raise / --surface-solid
+        cardBorder: Color(hex: "e6e6ee"),               // --hairline
+        accentBlue: Color(hex: "5b5bd6"),               // --accent
+        accentBlueLt: Color(hex: "7676e4"),
+        accentPurple: Color(hex: "8a6bea"),             // crest gradient stop
+        accentGreen: Color(hex: "1f9d57"),              // --good
+        accentYellow: Color(hex: "c2861a"),             // --warn
+        accentRed: Color(hex: "d6423a"),                // --bad
+        focusBorder: Color(hex: "5b5bd6").opacity(0.4),
+        selectionBg: Color(hex: "5b5bd6").opacity(0.2),
+        ddBg: Color(hex: "ffffff"),                     // --surface-solid
+        ddBorder: Color(hex: "e6e6ee"),                 // --hairline
+        ddItemHover: Color(hex: "5b5bd6").opacity(0.06)
     )
 }
 
