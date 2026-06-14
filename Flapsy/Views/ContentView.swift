@@ -440,9 +440,6 @@ private struct LockChip: View {
             .padding(.vertical, 3)
             .background(hovering ? theme.accentBlue.opacity(0.12) : Color.clear)
             .cornerRadius(7)
-            // Reserve a fixed width so swapping "Unlocked" ↔ "Lock now" on hover
-            // never reflows the header.
-            .frame(width: 96, alignment: .leading)
         }
         .buttonStyle(.hand)
         .help("Lock vault now")
