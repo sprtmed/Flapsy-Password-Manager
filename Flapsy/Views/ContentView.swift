@@ -63,11 +63,12 @@ struct VaultContainerView: View {
     @EnvironmentObject var settings: SettingsViewModel
     @Environment(\.theme) var theme
 
-    enum HeaderMenuKind { case new, more }
+    enum HeaderMenuKind: Hashable { case new, more }
     @State private var openMenu: HeaderMenuKind? = nil
+    @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .topLeading) {
             VStack(spacing: 0) {
                 // Top bar (hidden when expanded note is active)
                 if !vault.showExpandedNote {
@@ -95,23 +96,41 @@ struct VaultContainerView: View {
                 }
             }
 
-            // Header dropdown menus (+ / …)
+            // Header dropdown menus (+ / …) — anchored under the button that opened them.
             if let menu = openMenu {
                 Color.clear
                     .contentShape(Rectangle())
                     .ignoresSafeArea()
                     .onTapGesture { withAnimation(.easeOut(duration: 0.1)) { openMenu = nil } }
 
-                headerMenu(menu)
-                    .padding(.top, 56)
-                    .padding(.trailing, 12)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                GeometryReader { geo in
+                    let anchor = menuAnchors[menu] ?? .zero
+                    let menuWidth: CGFloat = 200
+                    let x = min(max(8, anchor.maxX - menuWidth), max(8, geo.size.width - menuWidth - 8))
+                    headerMenu(menu)
+                        .frame(width: menuWidth)
+                        .offset(x: x, y: anchor.maxY + 4)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
+                }
             }
         }
+        .coordinateSpace(name: "vaultContainer")
+        .onPreferenceChange(HeaderMenuAnchorKey.self) { menuAnchors = $0 }
         .ignoresSafeArea(.container, edges: .top)
         .onChange(of: vault.currentPanel) { _ in
             vault.showExpandedNote = false
             openMenu = nil
+        }
+    }
+
+    /// Reports a header button's frame (in the container's coordinate space) so a
+    /// dropdown can be anchored directly beneath it.
+    private func anchorReporter(_ kind: HeaderMenuKind) -> some View {
+        GeometryReader { geo in
+            Color.clear.preference(
+                key: HeaderMenuAnchorKey.self,
+                value: [kind: geo.frame(in: .named("vaultContainer"))]
+            )
         }
     }
 
@@ -150,15 +169,22 @@ struct VaultContainerView: View {
                         .foregroundColor(.white)
                 }
 
-                // Vault name + lock state
+                // Vault name + lock state. Falls back to a stacked layout when the
+                // row is too narrow so "Unlocked" never line-breaks.
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Personal Vault")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(theme.text)
                         .lineLimit(1)
-                    HStack(spacing: 4) {
-                        LockChip { vault.lock() }
-                        AutoLockTimerText()
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 4) {
+                            LockChip { vault.lock() }
+                            AutoLockTimerText()
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            LockChip { vault.lock() }
+                            AutoLockTimerText()
+                        }
                     }
                 }
 
@@ -169,13 +195,29 @@ struct VaultContainerView: View {
                     HeaderIconButton(systemName: "plus", help: "New item") {
                         toggleMenu(.new)
                     }
+                    .background(anchorReporter(.new))
+
                     HeaderIconButton(systemName: "gearshape", help: "Settings") {
                         openMenu = nil
                         vault.navigateToPanel(.settings)
                     }
+
+                    HeaderIconButton(
+                        systemName: settings.isWindowPinned ? "pin.fill" : "pin",
+                        help: settings.isWindowPinned ? "Unpin window" : "Pin window",
+                        isActive: settings.isWindowPinned,
+                        activeColor: theme.accentYellow
+                    ) {
+                        openMenu = nil
+                        withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                            settings.isWindowPinned.toggle()
+                        }
+                    }
+
                     HeaderIconButton(systemName: "ellipsis", help: "More", showAlert: !vault.flaggedItemIDs.isEmpty) {
                         toggleMenu(.more)
                     }
+                    .background(anchorReporter(.more))
                 }
             }
             .padding(.horizontal, 14)
@@ -273,10 +315,6 @@ struct VaultContainerView: View {
                     selectMenu { vault.navigateToPanel(.generator) }
                 }
             case .more:
-                HeaderMenuItem(icon: settings.isWindowPinned ? "pin.fill" : "pin",
-                               label: settings.isWindowPinned ? "Unpin window" : "Pin window") {
-                    selectMenu { settings.isWindowPinned.toggle() }
-                }
                 HeaderMenuItem(icon: "shield.lefthalf.filled", label: "Security checkup",
                                badge: vault.flaggedItemIDs.isEmpty ? nil : "\(vault.flaggedItemIDs.count)") {
                     selectMenu { vault.navigateToPanel(.health) }
@@ -358,6 +396,20 @@ struct VaultContainerView: View {
     }
 }
 
+// MARK: - Header Menu Anchoring
+
+/// Captures header button frames so a dropdown can open directly beneath the
+/// button that triggered it.
+private struct HeaderMenuAnchorKey: PreferenceKey {
+    static var defaultValue: [VaultContainerView.HeaderMenuKind: CGRect] = [:]
+    static func reduce(
+        value: inout [VaultContainerView.HeaderMenuKind: CGRect],
+        nextValue: () -> [VaultContainerView.HeaderMenuKind: CGRect]
+    ) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
 // MARK: - Header Components
 
 /// Live auto-lock countdown text. Isolated into its own view so only this label
@@ -399,6 +451,7 @@ private struct LockChip: View {
                     Text("Lock now")
                         .font(.system(size: 11.5, weight: .semibold))
                         .foregroundColor(theme.accentBlueLt)
+                        .fixedSize()
                 } else {
                     Circle()
                         .fill(theme.accentGreen)
@@ -410,6 +463,7 @@ private struct LockChip: View {
                     Text("Unlocked")
                         .font(.system(size: 11.5, weight: .medium))
                         .foregroundColor(theme.textMuted)
+                        .fixedSize()
                 }
             }
             .padding(.horizontal, 7)
@@ -429,21 +483,24 @@ private struct HeaderIconButton: View {
     let systemName: String
     let help: String
     var showAlert: Bool = false
+    var isActive: Bool = false
+    var activeColor: Color? = nil
     let action: () -> Void
 
     @Environment(\.theme) var theme
     @State private var hovering = false
 
     var body: some View {
-        Button(action: action) {
+        let tint = activeColor ?? theme.accentBlue
+        return Button(action: action) {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(hovering ? theme.fieldBg : Color.clear)
+                    .fill(isActive ? tint.opacity(0.14) : (hovering ? theme.fieldBg : Color.clear))
                     .frame(width: 30, height: 30)
                     .overlay(
                         Image(systemName: systemName)
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(hovering ? theme.text : theme.textMuted)
+                            .foregroundColor(isActive ? tint : (hovering ? theme.text : theme.textMuted))
                     )
                 if showAlert {
                     Circle()
