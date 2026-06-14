@@ -154,6 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .environmentObject(vaultViewModel)
             .environmentObject(settingsViewModel)
             .environmentObject(updateCheckService)
+            .environmentObject(autoLockService)
 
         let hostingController = NSHostingController(rootView: contentView)
 

@@ -1,9 +1,14 @@
 import Cocoa
+import Combine
 import Foundation
 
 /// Monitors system-wide activity and triggers vault lock after inactivity.
 /// Tracks: mouse movement, key presses, screen sleep, system sleep, fast user switch.
-final class AutoLockService {
+final class AutoLockService: ObservableObject {
+    /// Seconds until auto-lock given current inactivity, or nil when disabled.
+    /// Updated once per second so the UI can show a live countdown.
+    @Published var remainingSeconds: Int? = nil
+
     private var globalMouseMonitor: Any?
     private var globalKeyMonitor: Any?
     private var inactivityTimer: Timer?
@@ -21,6 +26,7 @@ final class AutoLockService {
         self.onLock = onLock
         self.isEnabled = true
         self.lastActivityDate = Date()
+        self.remainingSeconds = lockAfterMinutes > 0 ? lockAfterMinutes * 60 : nil
 
         // Global mouse/keyboard activity monitors
         globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(
@@ -42,9 +48,9 @@ final class AutoLockService {
         ws.addObserver(self, selector: #selector(screenDidWake), name: NSWorkspace.screensDidWakeNotification, object: nil)
         ws.addObserver(self, selector: #selector(sessionDidResignActive), name: NSWorkspace.sessionDidResignActiveNotification, object: nil)
 
-        // Check inactivity every 15 seconds
-        inactivityTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
-            self?.checkInactivity()
+        // Tick every second: update the live countdown and lock when it reaches zero.
+        inactivityTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.tick()
         }
     }
 
@@ -57,6 +63,7 @@ final class AutoLockService {
         inactivityTimer?.invalidate()
         inactivityTimer = nil
         isEnabled = false
+        remainingSeconds = nil
 
         let ws = NSWorkspace.shared.notificationCenter
         ws.removeObserver(self, name: NSWorkspace.willSleepNotification, object: nil)
@@ -68,6 +75,10 @@ final class AutoLockService {
     /// Update the timeout (e.g. when user changes setting while unlocked).
     func updateTimeout(minutes: Int) {
         lockAfterMinutes = minutes
+        lastActivityDate = Date()
+        if isEnabled {
+            remainingSeconds = minutes > 0 ? minutes * 60 : nil
+        }
     }
 
     // MARK: - Private
@@ -76,10 +87,13 @@ final class AutoLockService {
         lastActivityDate = Date()
     }
 
-    private func checkInactivity() {
+    private func tick() {
         guard isEnabled, lockAfterMinutes > 0 else { return }
         let elapsed = Date().timeIntervalSince(lastActivityDate)
-        if elapsed >= Double(lockAfterMinutes) * 60 {
+        let remaining = Double(lockAfterMinutes) * 60 - elapsed
+        let clamped = max(0, Int(remaining.rounded()))
+        if remainingSeconds != clamped { remainingSeconds = clamped }
+        if remaining <= 0 {
             triggerLock()
         }
     }

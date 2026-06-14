@@ -63,12 +63,19 @@ struct VaultContainerView: View {
     @EnvironmentObject var settings: SettingsViewModel
     @Environment(\.theme) var theme
 
+    enum HeaderMenuKind { case new, more }
+    @State private var openMenu: HeaderMenuKind? = nil
+
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             VStack(spacing: 0) {
                 // Top bar (hidden when expanded note is active)
                 if !vault.showExpandedNote {
-                    topBar
+                    if vault.currentPanel == .list {
+                        listHeader
+                    } else {
+                        subPanelBar
+                    }
                 }
                 // Panel content
                 panelContent
@@ -88,10 +95,23 @@ struct VaultContainerView: View {
                 }
             }
 
+            // Header dropdown menus (+ / …)
+            if let menu = openMenu {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture { withAnimation(.easeOut(duration: 0.1)) { openMenu = nil } }
+
+                headerMenu(menu)
+                    .padding(.top, 56)
+                    .padding(.trailing, 12)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .ignoresSafeArea(.container, edges: .top)
         .onChange(of: vault.currentPanel) { _ in
             vault.showExpandedNote = false
+            openMenu = nil
         }
     }
 
@@ -108,177 +128,192 @@ struct VaultContainerView: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.showExportSheet)
     }
 
-    private var topBar: some View {
-        GeometryReader { geo in
-            let compact = geo.size.width < 380
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "lock.open.fill")
-                        .font(.system(size: 14))
+    // MARK: - Main vault header (list panel)
+
+    private var listHeader: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 11) {
+                // Gradient crest
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(
+                            LinearGradient(
+                                colors: [theme.accentBlue, Color(hex: "8a6bea")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 34, height: 34)
+                        .shadow(color: theme.accentBlue.opacity(0.4), radius: 3, y: 2)
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.white)
+                }
+
+                // Vault name + lock state
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Personal Vault")
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundColor(theme.text)
-                    if vault.currentPanel != .list {
-                        Text(panelTitle)
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                            .foregroundColor(theme.text)
+                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        LockChip { vault.lock() }
+                        AutoLockTimerText()
                     }
                 }
-                Spacer()
-                HStack(spacing: 4) {
-                    if vault.currentPanel != .list {
-                        Button(action: { vault.navigateToPanel(vault.currentPanel == .noteTags ? .notes : .list) }) {
-                            HStack(spacing: 4) {
-                                Text("\u{2190}")
-                                    .font(.system(size: 11))
-                                if !compact {
-                                    Text("Back")
-                                        .font(.system(size: 11, design: .monospaced))
-                                }
-                            }
-                            .foregroundColor(theme.textSecondary)
-                            .padding(.horizontal, compact ? 8 : 12)
-                            .padding(.vertical, 5)
-                            .background(theme.fieldBg)
-                            .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
 
-                        if vault.currentPanel == .pomodoro {
-                            Button(action: {
-                                let pt = PomodoroTimer.shared
-                                pt.stopAll()
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    pt.showBlockMode.toggle()
-                                }
-                            }) {
-                                Image(systemName: "arrow.2.squarepath")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(theme.accentBlue)
-                                    .padding(.horizontal, compact ? 8 : 12)
-                                    .padding(.vertical, 5)
-                                    .background(theme.accentBlue.opacity(0.08))
-                                    .cornerRadius(6)
-                            }
-                            .buttonStyle(.hand)
-                            .help(PomodoroTimer.shared.showBlockMode ? "Switch to Classic" : "Switch to Block Mode")
-                        }
-                    } else {
-                        Button(action: {
-                            withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
-                                settings.isWindowPinned.toggle()
-                            }
-                        }) {
-                            Image(systemName: settings.isWindowPinned ? "pin.fill" : "pin.slash")
-                                .font(.system(size: 11))
-                                .foregroundColor(settings.isWindowPinned ? theme.accentYellow : theme.textSecondary)
-                                .padding(.horizontal, compact ? 8 : 12)
-                                .padding(.vertical, 5)
-                                .background(settings.isWindowPinned ? theme.accentYellow.opacity(0.1) : theme.fieldBg)
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
-                        .help(settings.isWindowPinned ? "Unpin window" : "Pin window")
+                Spacer(minLength: 6)
 
-                        Button(action: { vault.navigateToPanel(.addNew) }) {
-                            Text("+")
-                                .font(.system(size: 11))
-                            .foregroundColor(theme.accentBlueLt)
-                            .padding(.horizontal, compact ? 8 : 12)
-                            .padding(.vertical, 5)
-                            .background(theme.accentBlue.opacity(0.1))
-                            .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
-
-                        Button(action: { vault.navigateToPanel(.generator) }) {
-                            Text("\u{26A1}")
-                                .font(.system(size: 11))
-                                .foregroundColor(theme.accentPurple)
-                                .padding(.horizontal, compact ? 8 : 12)
-                                .padding(.vertical, 5)
-                                .background(theme.accentPurple.opacity(0.08))
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
-
-                        Button(action: { vault.navigateToPanel(.health) }) {
-                            ZStack(alignment: .topTrailing) {
-                                Image(systemName: "shield.lefthalf.filled")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(vault.flaggedItemIDs.isEmpty ? theme.accentGreen : theme.accentYellow)
-                                    .padding(.horizontal, compact ? 8 : 12)
-                                    .padding(.vertical, 5)
-                                    .background(
-                                        (vault.flaggedItemIDs.isEmpty ? theme.accentGreen : theme.accentYellow).opacity(0.08)
-                                    )
-                                    .cornerRadius(6)
-
-                                if !vault.flaggedItemIDs.isEmpty {
-                                    Text("\(vault.flaggedItemIDs.count)")
-                                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 3)
-                                        .padding(.vertical, 1)
-                                        .background(theme.accentRed)
-                                        .cornerRadius(4)
-                                        .offset(x: 4, y: -4)
-                                }
-                            }
-                        }
-                        .buttonStyle(.hand)
-
-                        Button(action: { vault.navigateToPanel(.pomodoro) }) {
-                            Image(systemName: "clock.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(theme.accentBlue)
-                                .padding(.horizontal, compact ? 8 : 12)
-                                .padding(.vertical, 5)
-                                .background(theme.accentBlue.opacity(0.08))
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
-
-                        Button(action: { vault.navigateToPanel(.notes) }) {
-                            Image(systemName: "note.text")
-                                .font(.system(size: 12))
-                                .foregroundColor(theme.accentYellow)
-                                .padding(.horizontal, compact ? 8 : 12)
-                                .padding(.vertical, 5)
-                                .background(theme.accentYellow.opacity(0.08))
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
-                        .help("Notes")
-
-                        Button(action: { vault.navigateToPanel(.settings) }) {
-                            Text("\u{2699}")
-                                .font(.system(size: 16))
-                                .foregroundColor(theme.textSecondary)
-                                .frame(height: 14)
-                                .padding(.horizontal, compact ? 8 : 12)
-                                .padding(.vertical, 5)
-                                .background(theme.fieldBg)
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
-
-                        Button(action: { vault.lock() }) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 10))
-                            .foregroundColor(theme.accentRed)
-                            .padding(.horizontal, compact ? 8 : 12)
-                            .padding(.vertical, 5)
-                            .background(theme.fieldBg)
-                            .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
+                // Action buttons
+                HStack(spacing: 2) {
+                    HeaderIconButton(systemName: "plus", help: "New item") {
+                        toggleMenu(.new)
+                    }
+                    HeaderIconButton(systemName: "gearshape", help: "Settings") {
+                        openMenu = nil
+                        vault.navigateToPanel(.settings)
+                    }
+                    HeaderIconButton(systemName: "ellipsis", help: "More", showAlert: !vault.flaggedItemIDs.isEmpty) {
+                        toggleMenu(.more)
                     }
                 }
-                .fixedSize()
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 14)
+            .padding(.top, 13)
+            .padding(.bottom, 12)
+
+            Rectangle()
+                .fill(theme.cardBorder)
+                .frame(height: 1)
         }
+        .padding(.top, 8)
+    }
+
+    private func toggleMenu(_ kind: HeaderMenuKind) {
+        withAnimation(.easeOut(duration: 0.12)) {
+            openMenu = (openMenu == kind) ? nil : kind
+        }
+    }
+
+    // MARK: - Sub-panel bar (everything except the list)
+
+    private var subPanelBar: some View {
+        HStack {
+            HStack(spacing: 8) {
+                Image(systemName: "lock.open.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(theme.text)
+                Text(panelTitle)
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(theme.text)
+            }
+            Spacer()
+            HStack(spacing: 4) {
+                Button(action: { vault.navigateToPanel(vault.currentPanel == .noteTags ? .notes : .list) }) {
+                    HStack(spacing: 4) {
+                        Text("\u{2190}")
+                            .font(.system(size: 11))
+                        Text("Back")
+                            .font(.system(size: 11, design: .monospaced))
+                    }
+                    .foregroundColor(theme.textSecondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .background(theme.fieldBg)
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.hand)
+
+                if vault.currentPanel == .pomodoro {
+                    Button(action: {
+                        let pt = PomodoroTimer.shared
+                        pt.stopAll()
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            pt.showBlockMode.toggle()
+                        }
+                    }) {
+                        Image(systemName: "arrow.2.squarepath")
+                            .font(.system(size: 11))
+                            .foregroundColor(theme.accentBlue)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(theme.accentBlue.opacity(0.08))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.hand)
+                    .help(PomodoroTimer.shared.showBlockMode ? "Switch to Classic" : "Switch to Block Mode")
+                }
+            }
+            .fixedSize()
+        }
+        .padding(.horizontal, 16)
         .frame(height: 30)
         .padding(.top, 12)
+        .padding(.bottom, 6)
+    }
+
+    // MARK: - Header dropdown menus
+
+    @ViewBuilder
+    private func headerMenu(_ kind: HeaderMenuKind) -> some View {
+        VStack(spacing: 2) {
+            switch kind {
+            case .new:
+                HeaderMenuItem(icon: "key", label: "New login") {
+                    selectMenu { vault.navigateToPanel(.addNew); vault.newType = .login }
+                }
+                HeaderMenuItem(icon: "creditcard", label: "New card") {
+                    selectMenu { vault.navigateToPanel(.addNew); vault.newType = .card }
+                }
+                HeaderMenuItem(icon: "doc.text", label: "New secure note") {
+                    selectMenu { vault.navigateToPanel(.addNew); vault.newType = .note }
+                }
+                HeaderMenuDivider()
+                HeaderMenuItem(icon: "wand.and.stars", label: "Password generator") {
+                    selectMenu { vault.navigateToPanel(.generator) }
+                }
+            case .more:
+                HeaderMenuItem(icon: settings.isWindowPinned ? "pin.fill" : "pin",
+                               label: settings.isWindowPinned ? "Unpin window" : "Pin window") {
+                    selectMenu { settings.isWindowPinned.toggle() }
+                }
+                HeaderMenuItem(icon: "shield.lefthalf.filled", label: "Security checkup",
+                               badge: vault.flaggedItemIDs.isEmpty ? nil : "\(vault.flaggedItemIDs.count)") {
+                    selectMenu { vault.navigateToPanel(.health) }
+                }
+                HeaderMenuItem(icon: "wand.and.stars", label: "Password generator") {
+                    selectMenu { vault.navigateToPanel(.generator) }
+                }
+                HeaderMenuItem(icon: "note.text", label: "Notes") {
+                    selectMenu { vault.navigateToPanel(.notes) }
+                }
+                HeaderMenuItem(icon: "tag", label: "Categories") {
+                    selectMenu { vault.navigateToPanel(.tags) }
+                }
+                HeaderMenuItem(icon: "timer", label: "Pomodoro") {
+                    selectMenu { vault.navigateToPanel(.pomodoro) }
+                }
+                HeaderMenuDivider()
+                HeaderMenuItem(icon: "trash", label: "Trash",
+                               badge: vault.trashedItems.isEmpty ? nil : "\(vault.trashedItems.count)") {
+                    selectMenu { vault.navigateToPanel(.trash) }
+                }
+            }
+        }
+        .padding(5)
+        .frame(width: 200)
+        .background(theme.ddBg)
+        .cornerRadius(11)
+        .overlay(
+            RoundedRectangle(cornerRadius: 11)
+                .stroke(theme.ddBorder, lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.28), radius: 18, x: 0, y: 10)
+    }
+
+    private func selectMenu(_ action: () -> Void) {
+        action()
+        openMenu = nil
     }
 
     @ViewBuilder
@@ -320,5 +355,162 @@ struct VaultContainerView: View {
         case .noteTags: return "Tags"
         case .trash: return "Trash"
         }
+    }
+}
+
+// MARK: - Header Components
+
+/// Live auto-lock countdown text. Isolated into its own view so only this label
+/// re-renders each second (not the whole vault list).
+private struct AutoLockTimerText: View {
+    @EnvironmentObject var autoLock: AutoLockService
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        Text(label)
+            .font(.system(size: 11.5))
+            .foregroundColor(theme.textFaint)
+            .lineLimit(1)
+    }
+
+    private var label: String {
+        guard let s = autoLock.remainingSeconds else { return "\u{00B7} no auto-lock" }
+        if s >= 60 {
+            return "\u{00B7} locks in \(s / 60)m \(String(format: "%02d", s % 60))s"
+        }
+        return "\u{00B7} locks in \(s)s"
+    }
+}
+
+/// Lock-state chip in the header. Shows a live green dot + "Unlocked"; on hover it
+/// swaps to an accent "Lock now" affordance. Tapping locks the vault.
+private struct LockChip: View {
+    let action: () -> Void
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if hovering {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(theme.accentBlueLt)
+                    Text("Lock now")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundColor(theme.accentBlueLt)
+                } else {
+                    Circle()
+                        .fill(theme.accentGreen)
+                        .frame(width: 7, height: 7)
+                        .overlay(
+                            Circle()
+                                .stroke(theme.accentGreen.opacity(0.25), lineWidth: 3)
+                        )
+                    Text("Unlocked")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundColor(theme.textMuted)
+                }
+            }
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(hovering ? theme.accentBlue.opacity(0.12) : Color.clear)
+            .cornerRadius(7)
+        }
+        .buttonStyle(.hand)
+        .help("Lock vault now")
+        .onHover { hovering = $0 }
+    }
+}
+
+/// 30×30 transparent icon button matching the design's `.iconbtn` (muted icon,
+/// field background + ink icon on hover). Optional warning alert dot.
+private struct HeaderIconButton: View {
+    let systemName: String
+    let help: String
+    var showAlert: Bool = false
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            ZStack(alignment: .topTrailing) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(hovering ? theme.fieldBg : Color.clear)
+                    .frame(width: 30, height: 30)
+                    .overlay(
+                        Image(systemName: systemName)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(hovering ? theme.text : theme.textMuted)
+                    )
+                if showAlert {
+                    Circle()
+                        .fill(theme.accentYellow)
+                        .frame(width: 7, height: 7)
+                        .overlay(Circle().stroke(theme.dropBg, lineWidth: 1.5))
+                        .offset(x: -4, y: 4)
+                }
+            }
+            .frame(width: 30, height: 30)
+        }
+        .buttonStyle(.hand)
+        .help(help)
+        .onHover { hovering = $0 }
+    }
+}
+
+/// A row inside a header dropdown menu (icon + label, optional count badge).
+private struct HeaderMenuItem: View {
+    let icon: String
+    let label: String
+    var badge: String? = nil
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                    .foregroundColor(theme.textMuted)
+                    .frame(width: 16)
+                Text(label)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundColor(theme.text)
+                Spacer(minLength: 4)
+                if let badge = badge {
+                    Text(badge)
+                        .font(.system(size: 10.5, weight: .bold))
+                        .foregroundColor(theme.accentYellow)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(theme.accentYellow.opacity(0.16))
+                        .cornerRadius(20)
+                }
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(hovering ? theme.fieldBg : Color.clear)
+            .cornerRadius(7)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.hand)
+        .onHover { hovering = $0 }
+    }
+}
+
+private struct HeaderMenuDivider: View {
+    @Environment(\.theme) var theme
+    var body: some View {
+        Rectangle()
+            .fill(theme.cardBorder)
+            .frame(height: 1)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
     }
 }
