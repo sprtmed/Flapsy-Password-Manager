@@ -73,9 +73,9 @@ struct AddItemView: View {
             VStack(alignment: .leading, spacing: 5) {
                 FormLabel("ITEM TYPE")
                 HStack(spacing: 4) {
-                    TypePill(type: .login, label: "\u{1F511} Login", selectedType: $vault.newType)
-                    TypePill(type: .card, label: "\u{1F4B3} Card", selectedType: $vault.newType)
-                    TypePill(type: .note, label: "\u{1F4DD} Note", selectedType: $vault.newType)
+                    TypePill(type: .login, icon: "key", label: "Login", selectedType: $vault.newType)
+                    TypePill(type: .card, icon: "creditcard", label: "Card", selectedType: $vault.newType)
+                    TypePill(type: .note, icon: "doc.text", label: "Note", selectedType: $vault.newType)
                 }
             }
 
@@ -464,26 +464,32 @@ struct FormTextField: View {
 
 struct TypePill: View {
     let type: ItemType
+    let icon: String
     let label: String
     @Binding var selectedType: ItemType
     @Environment(\.theme) var theme
 
     var body: some View {
+        let isSelected = selectedType == type
         Button(action: { selectedType = type }) {
-            Text(label)
-                .font(.ui(12))
-                .foregroundColor(selectedType == type ? theme.accentBlueLt : theme.textMuted)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 7)
-                .background(selectedType == type ? theme.pillBg : Color.clear)
-                .cornerRadius(20)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(
-                            selectedType == type ? theme.accentBlue.opacity(0.27) : theme.inputBorder,
-                            lineWidth: 1
-                        )
-                )
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .medium))
+                Text(label)
+                    .font(.ui(12))
+            }
+            .foregroundColor(isSelected ? theme.accentBlueLt : theme.textMuted)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 7)
+            .background(isSelected ? theme.pillBg : Color.clear)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(
+                        isSelected ? theme.accentBlue.opacity(0.27) : theme.inputBorder,
+                        lineWidth: 1
+                    )
+            )
         }
         .buttonStyle(.hand)
     }
