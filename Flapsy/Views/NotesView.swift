@@ -10,13 +10,19 @@ struct NotesView: View {
     @FocusState private var listSearchFocused: Bool
 
     var body: some View {
-        Group {
+        ZStack {
+            notesList
+
+            // Note editor — full-window panel sliding in from the right (matches items).
             if let id = vault.selectedNoteID {
                 NoteEditorView(noteID: id)
-            } else {
-                notesList
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(theme.dropBg.ignoresSafeArea())
+                    .transition(.move(edge: .trailing))
+                    .zIndex(20)
             }
         }
+        .animation(.spring(response: 0.32, dampingFraction: 0.9), value: vault.selectedNoteID)
     }
 
     // MARK: - List
