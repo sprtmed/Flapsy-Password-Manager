@@ -94,15 +94,8 @@ struct ItemDetailView: View {
                     .buttonStyle(.hand)
 
                     // Tappable icon + name area (click to dismiss)
-                    let catColor = vault.categoryFor(key: item.category)?.color ?? "8b5cf6"
-                    let colors = theme.categoryColors(hex: catColor)
                     HStack(spacing: 10) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(colors.background)
-                                .frame(width: 28, height: 28)
-                            typeIcon(for: item)
-                        }
+                        ItemAvatar(item: item, size: 28)
                         Text(item.name)
                             .font(.ui(14, weight: .bold))
                             .foregroundColor(theme.text)
@@ -646,21 +639,6 @@ struct ItemDetailView: View {
     }
 
     // MARK: - Type Icon
-
-    @ViewBuilder
-    private func typeIcon(for item: VaultItem) -> some View {
-        switch item.type {
-        case .card:
-            Text("\u{1F4B3}").font(.system(size: 13))
-        case .note:
-            Text("\u{1F4DD}").font(.system(size: 13))
-        case .login:
-            let catColor = vault.categoryFor(key: item.category)?.color ?? "8b5cf6"
-            Circle()
-                .fill(Color(hex: catColor))
-                .frame(width: 10, height: 10)
-        }
-    }
 
     // MARK: - Login Detail
 

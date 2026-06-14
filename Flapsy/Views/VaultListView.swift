@@ -546,27 +546,7 @@ struct VaultItemRow: View {
     }
 
     private var itemIcon: some View {
-        let catColor = vault.categoryFor(key: item.category)?.color ?? "10b981"
-        let colors = theme.categoryColors(hex: catColor)
-        return ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(colors.background)
-                .frame(width: 36, height: 36)
-            Group {
-                switch item.type {
-                case .card:
-                    Text("\u{1F4B3}")
-                        .font(.system(size: 16))
-                case .note:
-                    Text("\u{1F4DD}")
-                        .font(.system(size: 16))
-                case .login:
-                    Circle()
-                        .fill(colors.foreground)
-                        .frame(width: 12, height: 12)
-                }
-            }
-        }
+        ItemAvatar(item: item)
     }
 
     // MARK: - Fuzzy Highlight
@@ -674,6 +654,67 @@ private struct QuickStarButton: View {
         .buttonStyle(.hand)
         .help(isFavorite ? "Remove from favorites" : "Add to favorites")
         .onHover { hovering = $0 }
+    }
+}
+
+// MARK: - Item Avatar
+
+/// The left-hand avatar for a vault item — decided purely by item type, with no
+/// external icon fetching (fully private):
+/// - login → filled colored tile with the first letter of the name
+/// - card  → colored tile with a credit-card glyph
+/// - note  → neutral tile with a document glyph
+/// Tile color comes from the item's category, falling back to a stable color
+/// derived from the name so each entry still looks distinct.
+struct ItemAvatar: View {
+    let item: VaultItem
+    var size: CGFloat = 36
+
+    @EnvironmentObject var vault: VaultViewModel
+    @Environment(\.theme) var theme
+
+    private var tileColor: Color {
+        if let cat = vault.categoryFor(key: item.category), !cat.color.isEmpty {
+            return Color(hex: cat.color)
+        }
+        return ItemAvatar.derivedColor(for: item.name)
+    }
+
+    private var initial: String {
+        item.name.first.map { String($0).uppercased() } ?? "?"
+    }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.25)
+                .fill(item.type == .note ? theme.fieldBg : tileColor)
+                .frame(width: size, height: size)
+
+            switch item.type {
+            case .login:
+                Text(initial)
+                    .font(.ui(size * 0.42, weight: .bold))
+                    .foregroundColor(.white)
+            case .card:
+                Image(systemName: "creditcard")
+                    .font(.system(size: size * 0.42, weight: .medium))
+                    .foregroundColor(.white)
+            case .note:
+                Image(systemName: "doc.text")
+                    .font(.system(size: size * 0.46, weight: .regular))
+                    .foregroundColor(theme.textMuted)
+            }
+        }
+    }
+
+    /// Stable, well-distributed color derived from the item name (used when the
+    /// item has no category). Saturated enough for white text to read clearly.
+    static func derivedColor(for name: String) -> Color {
+        let palette = ["3b82f6", "0ea5e9", "6366f1", "8b5cf6", "a855f7",
+                       "ec4899", "f59e0b", "10b981", "14b8a6", "ef4444",
+                       "64748b", "f97316"]
+        let sum = name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        return Color(hex: palette[sum % palette.count])
     }
 }
 
