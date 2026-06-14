@@ -49,7 +49,7 @@ struct ContentView: View {
             }
         }
         .ignoresSafeArea(.container, edges: .top)
-        .frame(minWidth: 320, maxWidth: 420, minHeight: 480, maxHeight: 650)
+        .frame(minWidth: 360, maxWidth: 420, minHeight: 480, maxHeight: 650)
         .environment(\.theme, theme)
         .font(.system(.body))
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.currentScreen)

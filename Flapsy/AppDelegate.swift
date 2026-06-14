@@ -167,7 +167,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.backgroundColor = .clear
         window.hasShadow = true
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 320, height: 480)
+        window.minSize = NSSize(width: 360, height: 480)
         window.maxSize = NSSize(width: 420, height: 650)
         window.setContentSize(NSSize(width: 420, height: 650))
 
