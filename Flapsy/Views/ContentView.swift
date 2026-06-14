@@ -96,6 +96,16 @@ struct VaultContainerView: View {
                 }
             }
 
+            // Item detail / edit — a full-window panel that slides in from the right,
+            // covering the list (matches the design mockup).
+            if vault.selectedItem != nil {
+                ItemDetailView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(theme.dropBg.ignoresSafeArea())
+                    .transition(.move(edge: .trailing))
+                    .zIndex(20)
+            }
+
             // Header dropdown menus (+ / …) — anchored under the button that opened them.
             if let menu = openMenu {
                 Color.clear
@@ -117,6 +127,7 @@ struct VaultContainerView: View {
         .coordinateSpace(name: "vaultContainer")
         .onPreferenceChange(HeaderMenuAnchorKey.self) { menuAnchors = $0 }
         .ignoresSafeArea(.container, edges: .top)
+        .animation(.spring(response: 0.32, dampingFraction: 0.9), value: vault.selectedItemID)
         .onChange(of: vault.currentPanel) { _ in
             vault.showExpandedNote = false
             openMenu = nil

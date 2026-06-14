@@ -11,24 +11,17 @@ struct VaultListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if vault.showExpandedNote {
-                // Expanded note takes over the full space
-                ItemDetailView()
-            } else {
-                searchBar
-                typeFilterRow
-                categoryFilterRow
-                sortRow
-                itemList
+            // The vault list. The item detail/edit panel is presented as a
+            // full-window overlay (slides in from the right) by VaultContainerView.
+            searchBar
+            typeFilterRow
+            categoryFilterRow
+            sortRow
+            itemList
 
-                if vault.selectedItem != nil {
-                    ItemDetailView()
-                }
+            Spacer(minLength: 0)
 
-                Spacer(minLength: 0)
-
-                footer
-            }
+            footer
 
             // Hidden Cmd+K handler
             Button("") { vault.isSearchFocused = true }
@@ -293,7 +286,7 @@ struct VaultListView: View {
                 }
             }
         }
-        .frame(maxHeight: vault.selectedItemID != nil ? 120 : .infinity)
+        .frame(maxHeight: .infinity)
         .layoutPriority(1)
     }
 

@@ -168,7 +168,6 @@ struct ItemDetailView: View {
                 .frame(height: 8)
             }
         }
-        .transition(.move(edge: .bottom).combined(with: .opacity))
         .alert("Delete Item", isPresented: $showDeleteConfirmation) {
             Button("Delete", role: .destructive) {
                 vault.deleteItem(item.id)
