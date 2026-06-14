@@ -105,7 +105,7 @@ struct VaultContainerView: View {
 
                 GeometryReader { geo in
                     let anchor = menuAnchors[menu] ?? .zero
-                    let menuWidth: CGFloat = 200
+                    let menuWidth: CGFloat = 240
                     let x = min(max(8, anchor.maxX - menuWidth), max(8, geo.size.width - menuWidth - 8))
                     headerMenu(menu)
                         .frame(width: menuWidth)
@@ -169,23 +169,13 @@ struct VaultContainerView: View {
                         .foregroundColor(.white)
                 }
 
-                // Vault name + lock state. Falls back to a stacked layout when the
-                // row is too narrow so "Unlocked" never line-breaks.
+                // Vault name + lock state
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Personal Vault")
+                    Text("Flapsy")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(theme.text)
                         .lineLimit(1)
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 4) {
-                            LockChip { vault.lock() }
-                            AutoLockTimerText()
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            LockChip { vault.lock() }
-                            AutoLockTimerText()
-                        }
-                    }
+                    LockChip { vault.lock() }
                 }
 
                 Spacer(minLength: 6)
@@ -339,7 +329,7 @@ struct VaultContainerView: View {
             }
         }
         .padding(5)
-        .frame(width: 200)
+        .frame(width: 240)
         .background(theme.ddBg)
         .cornerRadius(11)
         .overlay(
@@ -411,28 +401,6 @@ private struct HeaderMenuAnchorKey: PreferenceKey {
 }
 
 // MARK: - Header Components
-
-/// Live auto-lock countdown text. Isolated into its own view so only this label
-/// re-renders each second (not the whole vault list).
-private struct AutoLockTimerText: View {
-    @EnvironmentObject var autoLock: AutoLockService
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        Text(label)
-            .font(.system(size: 11.5))
-            .foregroundColor(theme.textFaint)
-            .lineLimit(1)
-    }
-
-    private var label: String {
-        guard let s = autoLock.remainingSeconds else { return "\u{00B7} no auto-lock" }
-        if s >= 60 {
-            return "\u{00B7} locks in \(s / 60)m \(String(format: "%02d", s % 60))s"
-        }
-        return "\u{00B7} locks in \(s)s"
-    }
-}
 
 /// Lock-state chip in the header. Shows a live green dot + "Unlocked"; on hover it
 /// swaps to an accent "Lock now" affordance. Tapping locks the vault.
@@ -538,6 +506,8 @@ private struct HeaderMenuItem: View {
                 Text(label)
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundColor(theme.text)
+                    .lineLimit(1)
+                    .fixedSize()
                 Spacer(minLength: 4)
                 if let badge = badge {
                     Text(badge)
