@@ -8,8 +8,6 @@ struct VaultListView: View {
 
     @FocusState private var isSearchFieldFocused: Bool
     @State private var keyMonitor: Any?
-    @State private var showSortMenu = false
-    @State private var sortAnchor: CGRect = .zero
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,46 +39,6 @@ struct VaultListView: View {
             if focused {
                 isSearchFieldFocused = true
                 vault.isSearchFocused = false
-            }
-        }
-        .coordinateSpace(name: "vaultList")
-        .onPreferenceChange(SortAnchorKey.self) { sortAnchor = $0 }
-        .overlay { sortMenuOverlay }
-    }
-
-    // MARK: - Sort dropdown overlay (styled like the header + / … menus)
-
-    @ViewBuilder
-    private var sortMenuOverlay: some View {
-        if showSortMenu {
-            GeometryReader { geo in
-                let menuWidth: CGFloat = 160
-                let x = min(max(8, sortAnchor.maxX - menuWidth), max(8, geo.size.width - menuWidth - 8))
-                ZStack(alignment: .topLeading) {
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .onTapGesture { withAnimation(.easeOut(duration: 0.1)) { showSortMenu = false } }
-
-                    VStack(spacing: 2) {
-                        ForEach(SortOption.allCases, id: \.self) { option in
-                            SortMenuRow(label: option.rawValue, isSelected: vault.sortOption == option) {
-                                vault.sortOption = option
-                                withAnimation(.easeOut(duration: 0.1)) { showSortMenu = false }
-                            }
-                        }
-                    }
-                    .padding(5)
-                    .frame(width: menuWidth)
-                    .background(theme.ddBg)
-                    .cornerRadius(11)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 11)
-                            .stroke(theme.ddBorder, lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.28), radius: 18, x: 0, y: 10)
-                    .offset(x: x, y: sortAnchor.maxY + 4)
-                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
-                }
             }
         }
     }
@@ -291,7 +249,12 @@ struct VaultListView: View {
     }
 
     private var sortMenu: some View {
-        Button(action: { withAnimation(.easeOut(duration: 0.12)) { showSortMenu.toggle() } }) {
+        let isOpen = vault.openHeaderMenu == .sort
+        return Button(action: {
+            withAnimation(.easeOut(duration: 0.12)) {
+                vault.openHeaderMenu = isOpen ? nil : .sort
+            }
+        }) {
             HStack(spacing: 5) {
                 Image(systemName: "arrow.up.arrow.down")
                     .font(.system(size: 10, weight: .medium))
@@ -299,9 +262,9 @@ struct VaultListView: View {
                     .font(.ui(11, weight: .medium))
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8, weight: .semibold))
-                    .rotationEffect(.degrees(showSortMenu ? 180 : 0))
+                    .rotationEffect(.degrees(isOpen ? 180 : 0))
             }
-            .foregroundColor(showSortMenu ? theme.text : theme.textMuted)
+            .foregroundColor(isOpen ? theme.text : theme.textMuted)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(theme.fieldBg)
@@ -309,9 +272,13 @@ struct VaultListView: View {
             .fixedSize()
         }
         .buttonStyle(.hand)
+        // Report the chip's frame into the shared menu system (same as the +/… buttons)
         .background(
             GeometryReader { geo in
-                Color.clear.preference(key: SortAnchorKey.self, value: geo.frame(in: .named("vaultList")))
+                Color.clear.preference(
+                    key: HeaderMenuAnchorKey.self,
+                    value: [HeaderMenuKind.sort: geo.frame(in: .named("vaultContainer"))]
+                )
             }
         )
     }
@@ -693,50 +660,6 @@ private struct QuickStarButton: View {
         }
         .buttonStyle(.hand)
         .help(isFavorite ? "Remove from favorites" : "Add to favorites")
-        .onHover { hovering = $0 }
-    }
-}
-
-// MARK: - Sort Dropdown
-
-/// Captures the sort chip's frame so its dropdown can anchor beneath it.
-private struct SortAnchorKey: PreferenceKey {
-    static var defaultValue: CGRect = .zero
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
-        value = nextValue()
-    }
-}
-
-/// A row in the sort dropdown, styled to match the header + / … menus.
-private struct SortMenuRow: View {
-    let label: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    @Environment(\.theme) var theme
-    @State private var hovering = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 9) {
-                Text(label)
-                    .font(.ui(12.5, weight: .medium))
-                    .foregroundColor(theme.text)
-                Spacer(minLength: 12)
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(theme.accentBlue)
-                }
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(hovering ? theme.fieldBg : Color.clear)
-            .cornerRadius(7)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.hand)
         .onHover { hovering = $0 }
     }
 }

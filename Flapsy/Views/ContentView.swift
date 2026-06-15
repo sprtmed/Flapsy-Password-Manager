@@ -57,14 +57,16 @@ struct ContentView: View {
     }
 }
 
+/// Identifies which header/list dropdown is open. Top-level so the list's sort
+/// chip can drive the same menu system the + / … buttons use.
+enum HeaderMenuKind: Hashable { case new, more, sort }
+
 /// Container for all vault panels (list, add, generator, tags, settings)
 struct VaultContainerView: View {
     @EnvironmentObject var vault: VaultViewModel
     @EnvironmentObject var settings: SettingsViewModel
     @Environment(\.theme) var theme
 
-    enum HeaderMenuKind: Hashable { case new, more }
-    @State private var openMenu: HeaderMenuKind? = nil
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
 
     var body: some View {
@@ -107,11 +109,11 @@ struct VaultContainerView: View {
             }
 
             // Header dropdown menus (+ / …) — anchored under the button that opened them.
-            if let menu = openMenu {
+            if let menu = vault.openHeaderMenu {
                 Color.clear
                     .contentShape(Rectangle())
                     .ignoresSafeArea()
-                    .onTapGesture { withAnimation(.easeOut(duration: 0.1)) { openMenu = nil } }
+                    .onTapGesture { withAnimation(.easeOut(duration: 0.1)) { vault.openHeaderMenu = nil } }
 
                 GeometryReader { geo in
                     let anchor = menuAnchors[menu] ?? .zero
@@ -130,7 +132,7 @@ struct VaultContainerView: View {
         .animation(.spring(response: 0.32, dampingFraction: 0.9), value: vault.selectedItemID)
         .onChange(of: vault.currentPanel) { _ in
             vault.showExpandedNote = false
-            openMenu = nil
+            vault.openHeaderMenu = nil
         }
     }
 
@@ -199,12 +201,12 @@ struct VaultContainerView: View {
                     .background(anchorReporter(.new))
 
                     HeaderIconButton(systemName: "note.text", help: "Notes") {
-                        openMenu = nil
+                        vault.openHeaderMenu = nil
                         vault.navigateToPanel(.notes)
                     }
 
                     HeaderIconButton(systemName: "gearshape", help: "Settings") {
-                        openMenu = nil
+                        vault.openHeaderMenu = nil
                         vault.navigateToPanel(.settings)
                     }
 
@@ -214,7 +216,7 @@ struct VaultContainerView: View {
                         isActive: settings.isWindowPinned,
                         activeColor: theme.accentYellow
                     ) {
-                        openMenu = nil
+                        vault.openHeaderMenu = nil
                         withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
                             settings.isWindowPinned.toggle()
                         }
@@ -239,7 +241,7 @@ struct VaultContainerView: View {
 
     private func toggleMenu(_ kind: HeaderMenuKind) {
         withAnimation(.easeOut(duration: 0.12)) {
-            openMenu = (openMenu == kind) ? nil : kind
+            vault.openHeaderMenu = (vault.openHeaderMenu == kind) ? nil : kind
         }
     }
 
@@ -339,6 +341,12 @@ struct VaultContainerView: View {
                                badge: vault.trashedItems.isEmpty ? nil : "\(vault.trashedItems.count)") {
                     selectMenu { vault.navigateToPanel(.trash) }
                 }
+            case .sort:
+                ForEach(SortOption.allCases, id: \.self) { option in
+                    HeaderMenuItem(label: option.rawValue, selected: vault.sortOption == option) {
+                        selectMenu { vault.sortOption = option }
+                    }
+                }
             }
         }
         .padding(5)
@@ -354,7 +362,7 @@ struct VaultContainerView: View {
 
     private func selectMenu(_ action: () -> Void) {
         action()
-        openMenu = nil
+        vault.openHeaderMenu = nil
     }
 
     @ViewBuilder
@@ -403,11 +411,11 @@ struct VaultContainerView: View {
 
 /// Captures header button frames so a dropdown can open directly beneath the
 /// button that triggered it.
-private struct HeaderMenuAnchorKey: PreferenceKey {
-    static var defaultValue: [VaultContainerView.HeaderMenuKind: CGRect] = [:]
+struct HeaderMenuAnchorKey: PreferenceKey {
+    static var defaultValue: [HeaderMenuKind: CGRect] = [:]
     static func reduce(
-        value: inout [VaultContainerView.HeaderMenuKind: CGRect],
-        nextValue: () -> [VaultContainerView.HeaderMenuKind: CGRect]
+        value: inout [HeaderMenuKind: CGRect],
+        nextValue: () -> [HeaderMenuKind: CGRect]
     ) {
         value.merge(nextValue()) { $1 }
     }
@@ -501,9 +509,10 @@ private struct HeaderIconButton: View {
 
 /// A row inside a header dropdown menu (icon + label, optional count badge).
 private struct HeaderMenuItem: View {
-    let icon: String
+    var icon: String? = nil
     let label: String
     var badge: String? = nil
+    var selected: Bool = false
     let action: () -> Void
 
     @Environment(\.theme) var theme
@@ -512,10 +521,12 @@ private struct HeaderMenuItem: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 9) {
-                Image(systemName: icon)
-                    .font(.system(size: 13))
-                    .foregroundColor(theme.textMuted)
-                    .frame(width: 16)
+                if let icon = icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 13))
+                        .foregroundColor(theme.textMuted)
+                        .frame(width: 16)
+                }
                 Text(label)
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundColor(theme.text)
@@ -530,6 +541,11 @@ private struct HeaderMenuItem: View {
                         .padding(.vertical, 3)
                         .background(theme.accentYellow.opacity(0.16))
                         .cornerRadius(20)
+                }
+                if selected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(theme.accentBlue)
                 }
             }
             .padding(.horizontal, 9)

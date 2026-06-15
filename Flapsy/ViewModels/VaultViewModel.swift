@@ -141,6 +141,9 @@ final class VaultViewModel: ObservableObject {
     @Published var toastMessage: String? = nil
     private var toastWorkItem: DispatchWorkItem?
 
+    // MARK: - Header/list dropdown menu (shared so the list sort chip and header buttons coordinate)
+    @Published var openHeaderMenu: HeaderMenuKind? = nil
+
     // MARK: - Add New Item
     @Published var newType: ItemType = .login
     @Published var newName: String = ""
