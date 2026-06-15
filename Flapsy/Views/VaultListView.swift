@@ -15,8 +15,7 @@ struct VaultListView: View {
             // full-window overlay (slides in from the right) by VaultContainerView.
             searchBar
             typeFilterRow
-            categoryFilterRow
-            sortRow
+            filterSortRow
             itemList
 
             Spacer(minLength: 0)
@@ -193,80 +192,92 @@ struct VaultListView: View {
         .padding(.top, 8)
     }
 
-    // MARK: - Category Filter
+    // MARK: - Category Filter + Sort (single row)
 
-    private var categoryFilterRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 2) {
-                FilterPill(title: "\u{229E} All", isActive: vault.activeCategory == "all") {
-                    vault.activeCategory = "all"
-                    vault.selectedItemID = nil
-                }
-                Button(action: {
-                    vault.showFavoritesOnly.toggle()
-                    if vault.showFavoritesOnly {
+    private var filterSortRow: some View {
+        HStack(spacing: 8) {
+            // Scrollable categories (with tag manager "+" at the end)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 2) {
+                    FilterPill(title: "\u{229E} All", isActive: vault.activeCategory == "all") {
                         vault.activeCategory = "all"
-                    }
-                    vault.selectedItemID = nil
-                }) {
-                    Text(vault.showFavoritesOnly ? "\u{2605}" : "\u{2606}")
-                        .font(.system(size: 13))
-                        .foregroundColor(vault.showFavoritesOnly ? Color(hex: "fbbf24") : theme.textMuted)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(vault.showFavoritesOnly ? theme.pillBg : Color.clear)
-                        .cornerRadius(20)
-                }
-                .buttonStyle(.hand)
-                ForEach(vault.categories) { cat in
-                    CategoryPill(
-                        label: cat.label,
-                        colorHex: cat.color,
-                        isActive: vault.activeCategory == cat.key
-                    ) {
-                        vault.activeCategory = cat.key
                         vault.selectedItemID = nil
                     }
+                    Button(action: {
+                        vault.showFavoritesOnly.toggle()
+                        if vault.showFavoritesOnly {
+                            vault.activeCategory = "all"
+                        }
+                        vault.selectedItemID = nil
+                    }) {
+                        Text(vault.showFavoritesOnly ? "\u{2605}" : "\u{2606}")
+                            .font(.system(size: 13))
+                            .foregroundColor(vault.showFavoritesOnly ? Color(hex: "fbbf24") : theme.textMuted)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(vault.showFavoritesOnly ? theme.pillBg : Color.clear)
+                            .cornerRadius(20)
+                    }
+                    .buttonStyle(.hand)
+                    ForEach(vault.categories) { cat in
+                        CategoryPill(
+                            label: cat.label,
+                            colorHex: cat.color,
+                            isActive: vault.activeCategory == cat.key
+                        ) {
+                            vault.activeCategory = cat.key
+                            vault.selectedItemID = nil
+                        }
+                    }
+                    Button(action: { vault.navigateToPanel(.tags) }) {
+                        Text("\u{FF0B}")
+                            .font(.system(size: 13))
+                            .foregroundColor(theme.textFaint)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                    }
+                    .buttonStyle(.hand)
                 }
-                Button(action: { vault.navigateToPanel(.tags) }) {
-                    Text("\u{FF0B}")
-                        .font(.system(size: 13))
-                        .foregroundColor(theme.textFaint)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                }
-                .buttonStyle(.hand)
             }
+
+            // Sort dropdown
+            sortMenu
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 6)
     }
 
-    // MARK: - Sort
-
-    private var sortRow: some View {
-        HStack(spacing: 0) {
-            Image(systemName: "arrow.up.arrow.down")
-                .font(.system(size: 9, weight: .medium))
-                .foregroundColor(theme.textGhost)
-                .padding(.trailing, 4)
+    private var sortMenu: some View {
+        Menu {
             ForEach(SortOption.allCases, id: \.self) { option in
                 Button(action: { vault.sortOption = option }) {
-                    Text(option.rawValue)
-                        .font(.ui(10, weight: .medium))
-                        .foregroundColor(vault.sortOption == option ? theme.accentBlueLt : theme.textGhost)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(vault.sortOption == option ? theme.pillBg : Color.clear)
-                        .cornerRadius(10)
+                    if vault.sortOption == option {
+                        Label(option.rawValue, systemImage: "checkmark")
+                    } else {
+                        Text(option.rawValue)
+                    }
                 }
-                .buttonStyle(.hand)
             }
-            Spacer()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.system(size: 10, weight: .medium))
+                Text(vault.sortOption.rawValue)
+                    .font(.ui(11, weight: .medium))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+            }
+            .foregroundColor(theme.textMuted)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(theme.fieldBg)
+            .cornerRadius(7)
+            .fixedSize()
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 2)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
     }
 
     // MARK: - Item List
