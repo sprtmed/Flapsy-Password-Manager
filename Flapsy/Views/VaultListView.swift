@@ -12,44 +12,40 @@ struct VaultListView: View {
     @State private var sortAnchor: CGRect = .zero
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            VStack(spacing: 0) {
-                // The vault list. The item detail/edit panel is presented as a
-                // full-window overlay (slides in from the right) by VaultContainerView.
-                searchBar
-                typeFilterRow
-                filterSortRow
-                itemList
+        VStack(spacing: 0) {
+            // The vault list. The item detail/edit panel is presented as a
+            // full-window overlay (slides in from the right) by VaultContainerView.
+            searchBar
+            typeFilterRow
+            filterSortRow
+            itemList
 
-                Spacer(minLength: 0)
+            Spacer(minLength: 0)
 
-                footer
+            footer
 
-                // Hidden Cmd+K handler
-                Button("") { vault.isSearchFocused = true }
-                    .keyboardShortcut("k", modifiers: .command)
-                    .frame(width: 0, height: 0)
-                    .opacity(0)
+            // Hidden Cmd+K handler
+            Button("") { vault.isSearchFocused = true }
+                .keyboardShortcut("k", modifiers: .command)
+                .frame(width: 0, height: 0)
+                .opacity(0)
+        }
+        .onAppear {
+            installKeyMonitor()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isSearchFieldFocused = true
             }
-            .onAppear {
-                installKeyMonitor()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isSearchFieldFocused = true
-                }
+        }
+        .onDisappear { removeKeyMonitor() }
+        .onChange(of: vault.isSearchFocused) { focused in
+            if focused {
+                isSearchFieldFocused = true
+                vault.isSearchFocused = false
             }
-            .onDisappear { removeKeyMonitor() }
-            .onChange(of: vault.isSearchFocused) { focused in
-                if focused {
-                    isSearchFieldFocused = true
-                    vault.isSearchFocused = false
-                }
-            }
-
-            // Sort dropdown (sibling in the coordinate space so it anchors correctly)
-            sortMenuOverlay
         }
         .coordinateSpace(name: "vaultList")
         .onPreferenceChange(SortAnchorKey.self) { sortAnchor = $0 }
+        .overlay { sortMenuOverlay }
     }
 
     // MARK: - Sort dropdown overlay (styled like the header + / … menus)
