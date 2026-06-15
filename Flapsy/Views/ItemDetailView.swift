@@ -81,91 +81,114 @@ struct ItemDetailView: View {
     // MARK: - Detail View (read-only)
 
     private func detailView(_ item: VaultItem) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                // Header
-                HStack(spacing: 8) {
-                    // Close button
-                    Button(action: { dismissDetail() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(theme.textFaint)
+        VStack(spacing: 0) {
+            // Header bar: ← Vault · centered title · star + Edit
+            HStack(spacing: 8) {
+                Button(action: { dismissDetail() }) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text("Vault")
+                            .font(.ui(13, weight: .semibold))
                     }
-                    .buttonStyle(.hand)
+                    .foregroundColor(theme.accentBlue)
+                }
+                .buttonStyle(.hand)
 
-                    // Tappable icon + name area (click to dismiss)
-                    HStack(spacing: 10) {
-                        ItemAvatar(item: item, size: 28)
+                Spacer(minLength: 4)
+
+                Text(item.name)
+                    .font(.ui(14, weight: .bold))
+                    .foregroundColor(theme.text)
+                    .lineLimit(1)
+
+                Spacer(minLength: 4)
+
+                Button(action: { vault.toggleFavorite(item.id) }) {
+                    Image(systemName: item.isFavorite ? "star.fill" : "star")
+                        .font(.system(size: 13))
+                        .foregroundColor(item.isFavorite ? Color(hex: "fbbf24") : theme.textMuted)
+                }
+                .buttonStyle(.hand)
+
+                Button(action: { vault.requestEditWithReauth(item) }) {
+                    Text("Edit")
+                        .font(.ui(12.5, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(theme.accentBlue)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.hand)
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 16)
+            .padding(.bottom, 11)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(theme.cardBorder).frame(height: 1)
+            }
+
+            // Body
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    // Centered hero: large avatar + name + subtitle
+                    VStack(spacing: 9) {
+                        ItemAvatar(item: item, size: 54)
                         Text(item.name)
-                            .font(.ui(14, weight: .bold))
+                            .font(.ui(17, weight: .bold))
                             .foregroundColor(theme.text)
-                            .lineLimit(1)
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture { dismissDetail() }
-
-                    // Action buttons (not dismissable)
-                    Button(action: { vault.requestEditWithReauth(item) }) {
-                        Text("\u{270E}")
-                            .font(.system(size: 12))
-                            .foregroundColor(theme.textSecondary)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(theme.fieldBg)
-                            .cornerRadius(6)
-                    }
-                    .buttonStyle(.hand)
-                    Button(action: {
-                        if settings.confirmBeforeDelete {
-                            showDeleteConfirmation = true
-                        } else {
-                            vault.deleteItem(item.id)
+                            .multilineTextAlignment(.center)
+                        if let subtitle = heroSubtitle(for: item) {
+                            Text(subtitle)
+                                .font(.mono(12.5))
+                                .foregroundColor(theme.textMuted)
+                                .multilineTextAlignment(.center)
                         }
-                    }) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 11))
-                            .foregroundColor(theme.accentRed)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(theme.fieldBg)
-                            .cornerRadius(6)
                     }
-                    .buttonStyle(.hand)
-                    Button(action: { vault.toggleFavorite(item.id) }) {
-                        Text(item.isFavorite ? "\u{2605}" : "\u{2606}")
-                            .font(.system(size: 16))
-                            .foregroundColor(item.isFavorite ? Color(hex: "fbbf24") : theme.textGhost)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 4)
+                    .padding(.bottom, 10)
+
+                    // Health status banner (logins with security issues)
+                    healthBanner(for: item, editing: false)
+
+                    switch item.type {
+                    case .login:
+                        loginDetail(item)
+                    case .card:
+                        cardDetail(item)
+                    case .note:
+                        noteDetail(item)
                     }
-                    .buttonStyle(.hand)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+            }
 
-                // Health status banner (logins with security issues)
-                healthBanner(for: item, editing: false)
-
-                switch item.type {
-                case .login:
-                    loginDetail(item)
-                case .card:
-                    cardDetail(item)
-                case .note:
-                    noteDetail(item)
+            // Footer: Modified … · Delete
+            HStack {
+                Text("Modified \(item.lastUsedDisplay)")
+                    .font(.ui(11))
+                    .foregroundColor(theme.textFaint)
+                Spacer()
+                Button(action: {
+                    if settings.confirmBeforeDelete {
+                        showDeleteConfirmation = true
+                    } else {
+                        vault.deleteItem(item.id)
+                    }
+                }) {
+                    Text("Delete")
+                        .font(.ui(12, weight: .semibold))
+                        .foregroundColor(theme.accentRed)
                 }
+                .buttonStyle(.hand)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-        }
-        .overlay(alignment: .top) {
-            VStack(spacing: 0) {
-                Rectangle()
-                    .fill(theme.cardBorder)
-                    .frame(height: 1)
-                LinearGradient(
-                    colors: [Color.black.opacity(0.12), Color.black.opacity(0)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 8)
+            .padding(.vertical, 11)
+            .overlay(alignment: .top) {
+                Rectangle().fill(theme.cardBorder).frame(height: 1)
             }
         }
         .alert("Delete Item", isPresented: $showDeleteConfirmation) {
@@ -180,6 +203,20 @@ struct ItemDetailView: View {
             if vault.showReauthPrompt {
                 ReauthOverlay()
             }
+        }
+    }
+
+    /// Subtitle shown under the name in the detail hero (URL for logins, type for cards).
+    private func heroSubtitle(for item: VaultItem) -> String? {
+        switch item.type {
+        case .login:
+            let url = item.url ?? ""
+            return url.isEmpty ? nil : url
+        case .card:
+            let type = item.cardType ?? ""
+            return type.isEmpty ? nil : type
+        case .note:
+            return nil
         }
     }
 
