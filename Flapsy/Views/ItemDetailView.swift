@@ -84,16 +84,7 @@ struct ItemDetailView: View {
         VStack(spacing: 0) {
             // Header bar: ← Vault · centered title · star + Edit
             HStack(spacing: 8) {
-                Button(action: { dismissDetail() }) {
-                    HStack(spacing: 3) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text("Vault")
-                            .font(.ui(13, weight: .semibold))
-                    }
-                    .foregroundColor(theme.accentBlue)
-                }
-                .buttonStyle(.hand)
+                backButton { dismissDetail() }
 
                 Spacer(minLength: 4)
 
@@ -149,6 +140,8 @@ struct ItemDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 4)
                     .padding(.bottom, 10)
+                    .contentShape(Rectangle())
+                    .onTapGesture { dismissDetail() }
 
                     // Health status banner (logins with security issues)
                     healthBanner(for: item, editing: false)
@@ -161,6 +154,12 @@ struct ItemDetailView: View {
                     case .note:
                         noteDetail(item)
                     }
+
+                    // Tap empty space (anywhere but the fields) to close.
+                    Color.clear
+                        .frame(maxWidth: .infinity, minHeight: 140)
+                        .contentShape(Rectangle())
+                        .onTapGesture { dismissDetail() }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -220,6 +219,24 @@ struct ItemDetailView: View {
         }
     }
 
+    /// Standard back button (← Back), matching the other panels.
+    private func backButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text("\u{2190}")
+                    .font(.system(size: 11))
+                Text("Back")
+                    .font(.ui(11))
+            }
+            .foregroundColor(theme.textSecondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .background(theme.fieldBg)
+            .cornerRadius(6)
+        }
+        .buttonStyle(.hand)
+    }
+
     private func expandedNoteBinding(for item: VaultItem) -> Binding<String> {
         switch item.type {
         case .login: return $vault.editLoginNotes
@@ -268,129 +285,131 @@ struct ItemDetailView: View {
                 Text("Are you sure you want to delete \"\(item.name)\"?")
             }
         } else {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    // Health status banner (logins with security issues)
-                    healthBanner(for: item, editing: true)
-
-                    // Name
-                    FormLabel("NAME")
-                    FormTextField(placeholder: "Item name\u{2026}", text: $vault.editName)
-
-                    // Type-specific fields
-                    switch item.type {
-                    case .login:
-                        loginEditFields
-                    case .card:
-                        cardEditFields
-                    case .note:
-                        noteEditFields
+            VStack(spacing: 0) {
+                // Header bar: ← Back + centered title
+                ZStack {
+                    Text(item.name)
+                        .font(.ui(14, weight: .bold))
+                        .foregroundColor(theme.text)
+                        .lineLimit(1)
+                        .padding(.horizontal, 90)
+                    HStack {
+                        backButton { vault.cancelEditing() }
+                        Spacer()
                     }
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 16)
+                .padding(.bottom, 11)
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(theme.cardBorder).frame(height: 1)
+                }
 
-                    // Category picker
-                    if !vault.categories.isEmpty {
-                        VStack(alignment: .leading, spacing: 5) {
-                            FormLabel("CATEGORY")
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 4) {
-                                    ForEach(vault.categories) { cat in
-                                        Button(action: { vault.editCategory = cat.key }) {
-                                            HStack(spacing: 5) {
-                                                Circle()
-                                                    .fill(Color(hex: cat.color))
-                                                    .frame(width: 8, height: 8)
-                                                Text(cat.label)
-                                                    .font(.ui(12))
-                                                    .foregroundColor(vault.editCategory == cat.key ? theme.accentBlueLt : theme.textMuted)
+                // Form
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        // Health status banner (logins with security issues)
+                        healthBanner(for: item, editing: true)
+
+                        // Name
+                        FormLabel("NAME")
+                        FormTextField(placeholder: "Item name\u{2026}", text: $vault.editName)
+
+                        // Type-specific fields
+                        switch item.type {
+                        case .login:
+                            loginEditFields
+                        case .card:
+                            cardEditFields
+                        case .note:
+                            noteEditFields
+                        }
+
+                        // Category picker
+                        if !vault.categories.isEmpty {
+                            VStack(alignment: .leading, spacing: 5) {
+                                FormLabel("CATEGORY")
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 4) {
+                                        ForEach(vault.categories) { cat in
+                                            Button(action: { vault.editCategory = cat.key }) {
+                                                HStack(spacing: 5) {
+                                                    Circle()
+                                                        .fill(Color(hex: cat.color))
+                                                        .frame(width: 8, height: 8)
+                                                    Text(cat.label)
+                                                        .font(.ui(12))
+                                                        .foregroundColor(vault.editCategory == cat.key ? theme.accentBlueLt : theme.textMuted)
+                                                }
+                                                .padding(.horizontal, 14)
+                                                .padding(.vertical, 6)
+                                                .background(vault.editCategory == cat.key ? theme.pillBg : Color.clear)
+                                                .cornerRadius(20)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 20)
+                                                        .stroke(
+                                                            vault.editCategory == cat.key ? theme.accentBlue.opacity(0.27) : theme.inputBorder,
+                                                            lineWidth: 1
+                                                        )
+                                                )
                                             }
-                                            .padding(.horizontal, 14)
-                                            .padding(.vertical, 6)
-                                            .background(vault.editCategory == cat.key ? theme.pillBg : Color.clear)
-                                            .cornerRadius(20)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(
-                                                        vault.editCategory == cat.key ? theme.accentBlue.opacity(0.27) : theme.inputBorder,
-                                                        lineWidth: 1
-                                                    )
-                                            )
+                                            .buttonStyle(.hand)
                                         }
-                                        .buttonStyle(.hand)
                                     }
                                 }
                             }
                         }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                }
 
-                    // Action buttons
-                    HStack(spacing: 8) {
-                        Button(action: { vault.saveEditedItem() }) {
-                            Text("Save")
-                                .font(.ui(12, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 8)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(hex: "3b82f6"), Color(hex: "2563eb")],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .cornerRadius(8)
+                // Footer: Delete · Cancel · Save
+                HStack(spacing: 8) {
+                    Button(action: {
+                        if settings.confirmBeforeDelete {
+                            showDeleteConfirmation = true
+                        } else {
+                            vault.deleteItem(item.id)
+                            vault.isEditingItem = false
                         }
-                        .buttonStyle(.hand)
-
-                        Button(action: { vault.cancelEditing() }) {
-                            Text("Cancel")
-                                .font(.ui(12))
-                                .foregroundColor(theme.textSecondary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(theme.fieldBg)
-                                .cornerRadius(8)
-                        }
-                        .buttonStyle(.hand)
-
-                        Spacer()
-
-                        Button(action: {
-                            if settings.confirmBeforeDelete {
-                                showDeleteConfirmation = true
-                            } else {
-                                vault.deleteItem(item.id)
-                                vault.isEditingItem = false
-                            }
-                        }) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 11))
-                                .foregroundColor(theme.accentRed)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(theme.fieldBg)
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(.hand)
+                    }) {
+                        Text("Delete")
+                            .font(.ui(12, weight: .semibold))
+                            .foregroundColor(theme.accentRed)
                     }
-                    .padding(.top, 4)
+                    .buttonStyle(.hand)
+
+                    Spacer()
+
+                    Button(action: { vault.cancelEditing() }) {
+                        Text("Cancel")
+                            .font(.ui(12))
+                            .foregroundColor(theme.textSecondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(theme.fieldBg)
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(.hand)
+
+                    Button(action: { vault.saveEditedItem() }) {
+                        Text("Save")
+                            .font(.ui(12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                            .background(theme.accentBlue)
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(.hand)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-            }
-            .overlay(alignment: .top) {
-                VStack(spacing: 0) {
-                    Rectangle()
-                        .fill(theme.cardBorder)
-                        .frame(height: 1)
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.12), Color.black.opacity(0)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 8)
+                .padding(.vertical, 11)
+                .overlay(alignment: .top) {
+                    Rectangle().fill(theme.cardBorder).frame(height: 1)
                 }
             }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
             .alert("Delete Item", isPresented: $showDeleteConfirmation) {
                 Button("Delete", role: .destructive) {
                     vault.deleteItem(item.id)
