@@ -23,13 +23,13 @@ struct LockScreenView: View {
                 RoundedRectangle(cornerRadius: 20)
                     .fill(
                         LinearGradient(
-                            colors: [Color(hex: "3b82f6"), Color(hex: "1d4ed8")],
+                            colors: [theme.accentBlue, Color(hex: "8a6bea")],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 64, height: 64)
-                    .shadow(color: Color(hex: "3b82f6").opacity(0.3), radius: 16, y: 8)
+                    .shadow(color: theme.accentBlue.opacity(0.3), radius: 16, y: 8)
 
                 Image(systemName: "lock.fill")
                     .font(.system(size: 28))
@@ -46,25 +46,85 @@ struct LockScreenView: View {
                     .foregroundColor(theme.textSecondary)
             }
 
-            // Password input
-            SecureField("", text: $vault.masterPasswordInput)
-                .textFieldStyle(.plain)
-                .font(.ui(16))
-                .multilineTextAlignment(.center)
-                .padding(10)
-                .background(theme.inputBg)
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(
-                            vault.lockError ? theme.accentRed : theme.inputBorder,
-                            lineWidth: 1
-                        )
-                )
-                .foregroundColor(theme.text)
-                .focused($isPasswordFocused)
-                .modifier(ShakeModifier(shakes: vault.shakeError ? 3 : 0))
+            // Touch ID (above the password field)
+            if biometricAvailableAndEnabled && !vault.needsSecretKeyRecovery {
+                Button(action: { vault.attemptBiometricUnlock() }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "touchid")
+                            .font(.system(size: 20))
+                        Text("Unlock with Touch ID")
+                            .font(.ui(13, weight: .medium))
+                    }
+                    .foregroundColor(theme.accentBlueLt)
+                    .padding(.vertical, 8)
+                }
+                .buttonStyle(.hand)
+                .disabled(vault.showBiometricPrompt)
+
+                // Divider
+                HStack(spacing: 10) {
+                    Rectangle().fill(theme.cardBorder).frame(height: 1)
+                    Text("or enter master password")
+                        .font(.ui(11))
+                        .foregroundColor(theme.textMuted)
+                        .fixedSize()
+                    Rectangle().fill(theme.cardBorder).frame(height: 1)
+                }
                 .padding(.horizontal, 32)
+            }
+
+            // Password input with inline arrow-submit button
+            HStack(spacing: 6) {
+                ZStack(alignment: .leading) {
+                    if vault.masterPasswordInput.isEmpty {
+                        Text("Master password")
+                            .font(.ui(15))
+                            .foregroundColor(theme.textFaint)
+                    }
+                    SecureField("", text: $vault.masterPasswordInput)
+                        .textFieldStyle(.plain)
+                        .font(.ui(15))
+                        .foregroundColor(theme.text)
+                        .focused($isPasswordFocused)
+                }
+                Button(action: {
+                    if vault.needsSecretKeyRecovery {
+                        vault.unlockWithRecoveredSecretKey()
+                    } else {
+                        vault.unlock()
+                    }
+                }) {
+                    Group {
+                        if vault.isLoading {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                                .progressViewStyle(.circular)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 38, height: 38)
+                    .background(theme.accentBlue)
+                    .cornerRadius(9)
+                }
+                .buttonStyle(.hand)
+                .keyboardShortcut(.defaultAction)
+                .disabled(vault.isLoading || vault.isLockedOut || vault.masterPasswordInput.isEmpty)
+            }
+            .padding(.leading, 14)
+            .padding(.trailing, 5)
+            .padding(.vertical, 5)
+            .background(theme.inputBg)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(vault.lockError ? theme.accentRed : theme.inputBorder, lineWidth: 1)
+            )
+            .modifier(ShakeModifier(shakes: vault.shakeError ? 3 : 0))
+            .padding(.horizontal, 32)
 
             // Error message
             if vault.lockError {
@@ -120,87 +180,6 @@ struct LockScreenView: View {
                         .foregroundColor(theme.textMuted)
                 }
                 .padding(.horizontal, 32)
-            }
-
-            // Unlock button
-            if vault.needsSecretKeyRecovery {
-                Button(action: { vault.unlockWithRecoveredSecretKey() }) {
-                    HStack(spacing: 8) {
-                        if vault.isLoading {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .progressViewStyle(.circular)
-                            Text("Unlocking\u{2026}")
-                                .font(.system(size: 13, weight: .semibold))
-                        } else {
-                            Image(systemName: "key.fill")
-                                .font(.system(size: 12))
-                            Text("Recover & Unlock")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(hex: "f59e0b"), Color(hex: "d97706")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .cornerRadius(10)
-                }
-                .buttonStyle(.hand)
-                .keyboardShortcut(.defaultAction)
-                .disabled(vault.isLoading || vault.isLockedOut)
-                .padding(.horizontal, 32)
-            } else {
-                Button(action: { vault.unlock() }) {
-                    HStack(spacing: 8) {
-                        if vault.isLoading {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .progressViewStyle(.circular)
-                            Text("Unlocking\u{2026}")
-                                .font(.system(size: 13, weight: .semibold))
-                        } else {
-                            Text("Unlock Vault")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(hex: "3b82f6"), Color(hex: "2563eb")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .cornerRadius(10)
-                }
-                .buttonStyle(.hand)
-                .keyboardShortcut(.defaultAction)
-                .disabled(vault.isLoading || vault.isLockedOut)
-                .padding(.horizontal, 32)
-            }
-
-            // Touch ID button
-            if biometricAvailableAndEnabled && !vault.needsSecretKeyRecovery {
-                Button(action: { vault.attemptBiometricUnlock() }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "touchid")
-                            .font(.system(size: 20))
-                        Text("Unlock with Touch ID")
-                            .font(.ui(13, weight: .medium))
-                    }
-                    .foregroundColor(theme.accentBlueLt)
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(.hand)
-                .disabled(vault.showBiometricPrompt)
             }
 
             // Security badges
