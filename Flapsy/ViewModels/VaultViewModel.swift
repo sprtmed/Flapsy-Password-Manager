@@ -51,6 +51,7 @@ enum VaultPanel {
     case notes
     case noteTags
     case trash
+    case todo
 }
 
 /// A row in the Notes list, with an optional search snippet split into
@@ -109,6 +110,13 @@ final class VaultViewModel: ObservableObject {
     // MARK: - Vault Data
     @Published var items: [VaultItem] = []
     @Published var categories: [VaultCategory] = []
+
+    // MARK: - To-Do (standalone To-Do mini-app)
+    @Published var tasks: [TodoTask] = []
+    @Published var todoStatus: TaskStatusFilter = .all
+    @Published var todoFlagOnly: Bool = false
+    @Published var todoScope: TaskDateScope = .anytime
+    @Published var newTaskText: String = ""
 
     // MARK: - Notes (standalone Notes mini-app)
     @Published var notes: [Note] = []
@@ -561,6 +569,7 @@ final class VaultViewModel: ObservableObject {
                     self.categories = vaultData.categories
                     self.notes = vaultData.notes
                     self.noteTags = vaultData.noteTags
+                    self.tasks = vaultData.tasks
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -622,6 +631,7 @@ final class VaultViewModel: ObservableObject {
                     self.categories = vaultData.categories
                     self.notes = vaultData.notes
                     self.noteTags = vaultData.noteTags
+                    self.tasks = vaultData.tasks
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -715,6 +725,7 @@ final class VaultViewModel: ObservableObject {
                     self.categories = vaultData.categories
                     self.notes = vaultData.notes
                     self.noteTags = vaultData.noteTags
+                    self.tasks = vaultData.tasks
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.isLoading = false
@@ -825,6 +836,7 @@ final class VaultViewModel: ObservableObject {
         categories = []
         notes = []
         noteTags = []
+        tasks = []
         selectedNoteID = nil
         noteSearchText = ""
         showNoteSearch = false
@@ -886,7 +898,7 @@ final class VaultViewModel: ObservableObject {
         guard isUnlocked, encryption.hasKey else { return }
 
         let settings = settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-        let vault = VaultData(items: items, categories: categories, settings: settings, notes: notes, noteTags: noteTags)
+        let vault = VaultData(items: items, categories: categories, settings: settings, notes: notes, noteTags: noteTags, tasks: tasks)
 
         do {
             try storage.saveVault(vault)
@@ -898,11 +910,12 @@ final class VaultViewModel: ObservableObject {
     private func setupAutoSave() {
         autoSaveDebounce?.cancel()
 
-        autoSaveDebounce = Publishers.Merge4(
-            $items.map { _ in () },
-            $categories.map { _ in () },
-            $notes.map { _ in () },
-            $noteTags.map { _ in () }
+        autoSaveDebounce = Publishers.MergeMany(
+            $items.map { _ in () }.eraseToAnyPublisher(),
+            $categories.map { _ in () }.eraseToAnyPublisher(),
+            $notes.map { _ in () }.eraseToAnyPublisher(),
+            $noteTags.map { _ in () }.eraseToAnyPublisher(),
+            $tasks.map { _ in () }.eraseToAnyPublisher()
         )
         .dropFirst()
         .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
@@ -1019,6 +1032,136 @@ final class VaultViewModel: ObservableObject {
         newNoteText = ""
         newTotpSecret = ""
         newLoginNotes = ""
+    }
+
+    // MARK: - To-Do (standalone To-Do mini-app)
+
+    /// Adds a new task to the top of the list (quick-add prepends).
+    func addTask(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        tasks.insert(TodoTask(text: trimmed), at: 0)
+        newTaskText = ""
+    }
+
+    /// Toggle completion. Repeating tasks advance to the next occurrence and stay
+    /// active (never marked done); one-off tasks flip done/active.
+    func toggleTask(_ id: UUID) {
+        guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
+        if tasks[idx].repeatRule != .never && !tasks[idx].done {
+            if let next = tasks[idx].nextOccurrence() {
+                tasks[idx].due = next
+                showToast("Repeats \u{00B7} next \(tasks[idx].dueLabel() ?? "")")
+            }
+            return
+        }
+        tasks[idx].done.toggle()
+        tasks[idx].completedAt = tasks[idx].done ? Date() : nil
+    }
+
+    func deleteTask(_ id: UUID) {
+        tasks.removeAll { $0.id == id }
+    }
+
+    func toggleTaskFlag(_ id: UUID) {
+        guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
+        tasks[idx].pri.toggle()
+    }
+
+    func setTaskDue(_ id: UUID, _ date: Date?) {
+        guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
+        tasks[idx].due = date.map { Calendar.current.startOfDay(for: $0) }
+    }
+
+    func setTaskRepeat(_ id: UUID, _ rule: TaskRepeat) {
+        guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
+        tasks[idx].repeatRule = rule
+    }
+
+    func editTaskText(_ id: UUID, _ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let idx = tasks.firstIndex(where: { $0.id == id }), !trimmed.isEmpty else { return }
+        tasks[idx].text = trimmed
+    }
+
+    /// Preset due dates used by the date menus.
+    static func presetDate(_ scope: TaskDateScope, now: Date = Date(), calendar: Calendar = .current) -> Date? {
+        let today = calendar.startOfDay(for: now)
+        switch scope {
+        case .today: return today
+        case .tomorrow: return calendar.date(byAdding: .day, value: 1, to: today)
+        case .thisWeekend: return nextWeekday(7, from: today, calendar: calendar) // Saturday
+        case .nextWeek: return nextWeekday(2, from: today, calendar: calendar)    // Monday
+        default: return nil
+        }
+    }
+
+    private static func nextWeekday(_ weekday: Int, from date: Date, calendar: Calendar) -> Date {
+        calendar.nextDate(after: date, matching: DateComponents(weekday: weekday), matchingPolicy: .nextTime) ?? date
+    }
+
+    // MARK: To-Do filtering / grouping
+
+    /// Tasks after status + flag + date-scope filters (manual order preserved).
+    var filteredTasks: [TodoTask] {
+        tasks.filter { task in
+            switch todoStatus {
+            case .all: break
+            case .active: if task.done { return false }
+            case .done: if !task.done { return false }
+            }
+            if todoFlagOnly && !task.pri { return false }
+            return taskMatchesScope(task)
+        }
+    }
+
+    private func taskMatchesScope(_ task: TodoTask) -> Bool {
+        let cal = Calendar.current
+        switch todoScope {
+        case .anytime: return true
+        case .noDate: return task.due == nil
+        case .overdue: return task.isOverdue()
+        case .today: return task.due.map { cal.isDateInToday($0) } ?? false
+        case .tomorrow: return task.due.map { cal.isDateInTomorrow($0) } ?? false
+        case .thisWeekend:
+            guard let due = task.due, let sat = Self.presetDate(.thisWeekend),
+                  let sun = cal.date(byAdding: .day, value: 1, to: sat) else { return false }
+            let d = cal.startOfDay(for: due)
+            return d == cal.startOfDay(for: sat) || d == cal.startOfDay(for: sun)
+        case .nextWeek:
+            guard let due = task.due, let mon = Self.presetDate(.nextWeek),
+                  let end = cal.date(byAdding: .day, value: 6, to: mon) else { return false }
+            let d = cal.startOfDay(for: due)
+            return d >= cal.startOfDay(for: mon) && d <= cal.startOfDay(for: end)
+        case .pick(let date):
+            return task.due.map { cal.isDate($0, inSameDayAs: date) } ?? false
+        }
+    }
+
+    /// Agenda mode (grouped under date headers): scope = Anytime and status ≠ Done.
+    var todoIsAgenda: Bool {
+        if case .anytime = todoScope, todoStatus != .done { return true }
+        return false
+    }
+
+    /// Agenda groups in display order, non-empty only.
+    var todoAgenda: [(bucket: TaskBucket, tasks: [TodoTask])] {
+        var groups: [TaskBucket: [TodoTask]] = [:]
+        for task in filteredTasks {
+            let b: TaskBucket = task.done ? .completed : task.bucket()
+            groups[b, default: []].append(task)
+        }
+        return TaskBucket.allCases.compactMap { bucket in
+            guard let ts = groups[bucket], !ts.isEmpty else { return nil }
+            if bucket == .completed && todoStatus != .all { return nil }
+            return (bucket, ts)
+        }
+    }
+
+    /// done / total within the current scope (header progress).
+    var todoProgress: (done: Int, total: Int) {
+        let scoped = tasks.filter { taskMatchesScope($0) && (!todoFlagOnly || $0.pri) }
+        return (scoped.filter { $0.done }.count, scoped.count)
     }
 
     func navigateToPanel(_ panel: VaultPanel) {
@@ -1660,7 +1803,7 @@ final class VaultViewModel: ObservableObject {
         guard let url = ExportService.shared.showSavePanel(format: .encryptedBackup) else { return }
 
         let settings = settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-        let vaultData = VaultData(items: activeItems, categories: categories, settings: settings, notes: notes, noteTags: noteTags)
+        let vaultData = VaultData(items: activeItems, categories: categories, settings: settings, notes: notes, noteTags: noteTags, tasks: tasks)
 
         isExporting = true
         exportError = ""
@@ -1809,6 +1952,7 @@ final class VaultViewModel: ObservableObject {
                     self.categories = vaultData.categories
                     self.notes = vaultData.notes
                     self.noteTags = vaultData.noteTags
+                    self.tasks = vaultData.tasks
                     self.settingsViewModel?.loadFromVaultSettings(vaultData.settings)
                     self.isUnlocked = true
                     self.currentScreen = .vault
@@ -1949,7 +2093,7 @@ final class VaultViewModel: ObservableObject {
                 try self.storage.writeSalt(newSalt)
 
                 let settings = self.settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-                let vault = VaultData(items: self.items, categories: self.categories, settings: settings, notes: self.notes, noteTags: self.noteTags)
+                let vault = VaultData(items: self.items, categories: self.categories, settings: settings, notes: self.notes, noteTags: self.noteTags, tasks: self.tasks)
                 try self.storage.saveVault(vault)
 
                 // Always invalidate old biometric key on password change.
@@ -2007,6 +2151,7 @@ final class VaultViewModel: ObservableObject {
         categories = []
         notes = []
         noteTags = []
+        tasks = []
         selectedNoteID = nil
         noteSearchText = ""
         showNoteSearch = false
@@ -2062,6 +2207,7 @@ final class VaultViewModel: ObservableObject {
         categories = []
         notes = []
         noteTags = []
+        tasks = []
         selectedNoteID = nil
         noteSearchText = ""
         showNoteSearch = false

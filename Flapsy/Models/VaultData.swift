@@ -10,10 +10,12 @@ struct VaultData: Codable {
     /// Tags for the Notes app (Private, Work, …). Separate from `categories`,
     /// which tag vault items.
     var noteTags: [VaultCategory]
+    /// Tasks from the To-Do mini-app.
+    var tasks: [TodoTask]
 
     /// Internal schema revision for forward-compatible vault decoding.
     /// Increment when adding new Codable fields to prevent migration issues.
-    static let schemaRevision: UInt16 = 6
+    static let schemaRevision: UInt16 = 7
 
     static var empty: VaultData {
         VaultData(
@@ -21,23 +23,25 @@ struct VaultData: Codable {
             categories: [],
             settings: VaultSettings.defaults,
             notes: [],
-            noteTags: []
+            noteTags: [],
+            tasks: []
         )
     }
 
-    init(items: [VaultItem], categories: [VaultCategory], settings: VaultSettings, notes: [Note] = [], noteTags: [VaultCategory] = []) {
+    init(items: [VaultItem], categories: [VaultCategory], settings: VaultSettings, notes: [Note] = [], noteTags: [VaultCategory] = [], tasks: [TodoTask] = []) {
         self.items = items
         self.categories = categories
         self.settings = settings
         self.notes = notes
         self.noteTags = noteTags
+        self.tasks = tasks
     }
 
     // Custom decoder so vaults written before the Notes feature (which have no
     // `notes` key) still decode. Mirrors the `decodeIfPresent` pattern used by
     // VaultSettings. The encoder remains the synthesized one.
     enum CodingKeys: String, CodingKey {
-        case items, categories, settings, notes, noteTags
+        case items, categories, settings, notes, noteTags, tasks
     }
 
     init(from decoder: Decoder) throws {
@@ -47,5 +51,6 @@ struct VaultData: Codable {
         settings = try container.decode(VaultSettings.self, forKey: .settings)
         notes = try container.decodeIfPresent([Note].self, forKey: .notes) ?? []
         noteTags = try container.decodeIfPresent([VaultCategory].self, forKey: .noteTags) ?? []
+        tasks = try container.decodeIfPresent([TodoTask].self, forKey: .tasks) ?? []
     }
 }

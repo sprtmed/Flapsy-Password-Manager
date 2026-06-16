@@ -333,6 +333,9 @@ struct VaultContainerView: View {
                 HeaderMenuItem(icon: "tag", label: "Categories") {
                     selectMenu { vault.navigateToPanel(.tags) }
                 }
+                HeaderMenuItem(icon: "checklist", label: "To-Do") {
+                    selectMenu { vault.navigateToPanel(.todo) }
+                }
                 HeaderMenuItem(icon: "timer", label: "Pomodoro") {
                     selectMenu { vault.navigateToPanel(.pomodoro) }
                 }
@@ -388,6 +391,8 @@ struct VaultContainerView: View {
             NoteTagManagerView()
         case .trash:
             TrashView()
+        case .todo:
+            TodoView()
         }
     }
 
@@ -403,6 +408,7 @@ struct VaultContainerView: View {
         case .notes: return "Notes"
         case .noteTags: return "Tags"
         case .trash: return "Trash"
+        case .todo: return "To-Do"
         }
     }
 }
