@@ -204,8 +204,12 @@ struct TodoView: View {
                     .padding(.top, 12)
                     .padding(.bottom, 4)
 
+                    // Suppress the date chip for groups whose header already states
+                    // the date (Today / Tomorrow / Overdue). Keep it for This week
+                    // (weekday) and Later (date), where it adds information.
+                    let showChip = !(group.bucket == .today || group.bucket == .tomorrow || group.bucket == .overdue)
                     ForEach(group.tasks) { task in
-                        taskRow(task)
+                        taskRow(task, showDateLabel: showChip)
                     }
                 }
 
@@ -248,9 +252,10 @@ struct TodoView: View {
 
     // MARK: - Task row
 
-    private func taskRow(_ task: TodoTask) -> some View {
+    private func taskRow(_ task: TodoTask, showDateLabel: Bool = true) -> some View {
         TaskRow(
             task: task,
+            showDateLabel: showDateLabel,
             onToggle: { vault.toggleTask(task.id) },
             onFlag: { vault.toggleTaskFlag(task.id) },
             onDelete: { vault.deleteTask(task.id) },
@@ -272,16 +277,22 @@ struct TodoView: View {
 
     private func datePickerPopover(_ apply: @escaping (Date) -> Void) -> some View {
         VStack(spacing: 12) {
-            Text("Pick a date")
-                .font(.ui(12, weight: .semibold))
-                .foregroundColor(theme.text)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack {
+                Text("Pick a date")
+                    .font(.ui(12, weight: .semibold))
+                    .foregroundColor(theme.text)
+                Spacer()
+                Text(pickedDate.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                    .font(.mono(11, weight: .semibold))
+                    .foregroundColor(theme.accentBlue)
+            }
 
             DatePicker("", selection: $pickedDate, displayedComponents: .date)
                 .datePickerStyle(.graphical)
                 .labelsHidden()
                 .tint(theme.accentBlue)
-                .frame(width: 256)
+                .accentColor(theme.accentBlue)
+                .frame(width: 248)
 
             Button(action: { apply(pickedDate) }) {
                 Text("Set date")
@@ -295,8 +306,12 @@ struct TodoView: View {
             .buttonStyle(.hand)
         }
         .padding(16)
-        .frame(width: 290)
-        .background(theme.dropBg)
+        .frame(width: 286)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(theme.dropBg)
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(theme.cardBorder, lineWidth: 1))
+        )
         .environment(\.font, .ui(13))
     }
 }
@@ -305,6 +320,7 @@ struct TodoView: View {
 
 private struct TaskRow: View {
     let task: TodoTask
+    var showDateLabel: Bool = true
     let onToggle: () -> Void
     let onFlag: () -> Void
     let onDelete: () -> Void
@@ -372,9 +388,10 @@ private struct TaskRow: View {
                     .help("Repeats \(task.repeatRule.label.lowercased())")
             }
 
-            // Date chip / set-date menu (only when dated or hovering — keeps idle
-            // rows free of a native Menu that would otherwise capture taps)
-            if task.due != nil || hovering {
+            // Date chip / set-date menu. Shown when the task is dated AND the chip
+            // isn't redundant with its group header, or on hover (to set/change a
+            // date). Idle non-dated rows carry no Menu, so taps aren't captured.
+            if (task.due != nil && showDateLabel) || hovering {
                 dateMenu
             }
 
@@ -430,15 +447,16 @@ private struct TaskRow: View {
                 }
             }
         } label: {
-            if let label = task.dueLabel() {
+            if showDateLabel, let label = task.dueLabel() {
+                let tint = task.isOverdue() ? theme.accentRed : theme.accentBlue
                 HStack(spacing: 4) {
                     Image(systemName: "calendar").font(.system(size: 9))
-                    Text(label).font(.mono(10, weight: .medium))
+                    Text(label).font(.mono(10, weight: .semibold))
                 }
-                .foregroundColor(task.isOverdue() ? theme.accentRed : theme.textMuted)
+                .foregroundColor(tint)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 4)
-                .background((task.isOverdue() ? theme.accentRed : theme.textMuted).opacity(0.1))
+                .background(tint.opacity(0.12))
                 .cornerRadius(6)
             } else if hovering {
                 Image(systemName: "calendar")

@@ -159,7 +159,12 @@ extension TodoTask {
         if days < 0 { return .overdue }
         if days == 0 { return .today }
         if days == 1 { return .tomorrow }
-        if days < 7 { return .thisWeek }
+        // "This week" = anything still inside the current calendar week. Dates in
+        // the next calendar week (e.g. the "Next week" preset) fall into "Later".
+        if let weekEnd = calendar.dateInterval(of: .weekOfYear, for: now)?.end,
+           startDue < weekEnd {
+            return .thisWeek
+        }
         return .later
     }
 
