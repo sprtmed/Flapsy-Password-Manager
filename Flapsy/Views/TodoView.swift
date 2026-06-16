@@ -409,8 +409,11 @@ private struct TaskRow: View {
         return Button(action: onOpenDateMenu) {
             HStack(spacing: 4) {
                 Image(systemName: "calendar").font(.system(size: 9))
-                Text(label).font(.mono(10, weight: .medium))
+                Text(label)
+                    .font(.mono(10, weight: .medium))
+                    .lineLimit(1)
             }
+            .fixedSize()
             .foregroundColor(overdue ? theme.accentRed : theme.textMuted)
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
@@ -418,6 +421,7 @@ private struct TaskRow: View {
             .cornerRadius(6)
         }
         .buttonStyle(.hand)
+        .layoutPriority(1)
     }
 
     private func beginEdit() {
