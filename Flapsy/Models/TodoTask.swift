@@ -132,13 +132,12 @@ extension TodoTask {
         if days < 0 { return "Overdue" }
         if days == 0 { return "Today" }
         if days == 1 { return "Tomorrow" }
-        if days < 7 {
-            let f = DateFormatter()
-            f.dateFormat = "EEE"
-            return f.string(from: due)
-        }
         let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("MMMd")
+        if days < 7 {
+            f.dateFormat = "EEE"          // "Sat"
+        } else {
+            f.dateFormat = "d MMM"        // "6 Jul"
+        }
         return f.string(from: due)
     }
 

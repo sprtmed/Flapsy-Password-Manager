@@ -7,7 +7,6 @@ struct TodoView: View {
     @Environment(\.theme) var theme
 
     @FocusState private var addFocused: Bool
-    @State private var datePickerTask: UUID? = nil
     @State private var pickedDate = Date()
 
     var body: some View {
@@ -146,11 +145,15 @@ struct TodoView: View {
                     .font(.system(size: 8, weight: .semibold))
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
             }
-            .foregroundColor(isOpen ? theme.text : theme.textMuted)
+            .foregroundColor(isOpen ? theme.accentBlue : theme.textMuted)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(theme.fieldBg)
             .cornerRadius(7)
+            .overlay(
+                RoundedRectangle(cornerRadius: 7)
+                    .strokeBorder(theme.accentBlue, lineWidth: isOpen ? 1.5 : 0)
+            )
             .fixedSize()
         }
         .buttonStyle(.hand)
@@ -166,7 +169,10 @@ struct TodoView: View {
         )
         // "Pick a date…" from the scope menu opens this popover.
         .popover(isPresented: $vault.showTodoScopeDatePicker) {
-            datePickerPopover { vault.todoScope = .pick($0) }
+            DatePickerCard(date: $pickedDate) {
+                vault.todoScope = .pick($0)
+                vault.showTodoScopeDatePicker = false
+            }
         }
     }
 
@@ -260,59 +266,9 @@ struct TodoView: View {
             onFlag: { vault.toggleTaskFlag(task.id) },
             onDelete: { vault.deleteTask(task.id) },
             onEdit: { vault.editTaskText(task.id, $0) },
-            onPreset: { vault.setTaskDue(task.id, VaultViewModel.presetDate($0)) },
-            onClearDate: { vault.setTaskDue(task.id, nil) },
-            onRepeat: { vault.setTaskRepeat(task.id, $0) },
-            onPickDate: { datePickerTask = task.id }
+            onSetDate: { vault.setTaskDue(task.id, $0) },
+            onRepeat: { vault.setTaskRepeat(task.id, $0) }
         )
-        .popover(isPresented: Binding(
-            get: { datePickerTask == task.id },
-            set: { if !$0 { datePickerTask = nil } }
-        )) {
-            datePickerPopover { vault.setTaskDue(task.id, $0); datePickerTask = nil }
-        }
-    }
-
-    // MARK: - Date picker popover
-
-    private func datePickerPopover(_ apply: @escaping (Date) -> Void) -> some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Pick a date")
-                    .font(.ui(12, weight: .semibold))
-                    .foregroundColor(theme.text)
-                Spacer()
-                Text(pickedDate.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                    .font(.mono(11, weight: .semibold))
-                    .foregroundColor(theme.accentBlue)
-            }
-
-            DatePicker("", selection: $pickedDate, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
-                .tint(theme.accentBlue)
-                .accentColor(theme.accentBlue)
-                .frame(width: 248)
-
-            Button(action: { apply(pickedDate) }) {
-                Text("Set date")
-                    .font(.ui(12, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background(theme.accentBlue)
-                    .cornerRadius(9)
-            }
-            .buttonStyle(.hand)
-        }
-        .padding(16)
-        .frame(width: 286)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(theme.dropBg)
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(theme.cardBorder, lineWidth: 1))
-        )
-        .environment(\.font, .ui(13))
     }
 }
 
@@ -325,96 +281,25 @@ private struct TaskRow: View {
     let onFlag: () -> Void
     let onDelete: () -> Void
     let onEdit: (String) -> Void
-    let onPreset: (TaskDateScope) -> Void
-    let onClearDate: () -> Void
+    let onSetDate: (Date?) -> Void
     let onRepeat: (TaskRepeat) -> Void
-    let onPickDate: () -> Void
 
     @Environment(\.theme) var theme
     @State private var hovering = false
     @State private var editing = false
     @State private var draft = ""
     @State private var expanded = false
+    @State private var showDateMenu = false
+    @State private var showDatePicker = false
+    @State private var pickedDate = Date()
     @FocusState private var editFocused: Bool
 
     var body: some View {
         HStack(spacing: 11) {
-            // Completion checkbox
-            Button(action: onToggle) {
-                ZStack {
-                    Circle()
-                        .strokeBorder(task.done ? theme.accentGreen : theme.textGhost, lineWidth: 1.6)
-                        .frame(width: 20, height: 20)
-                    if task.done {
-                        Circle().fill(theme.accentGreen).frame(width: 20, height: 20)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                }
-                .frame(width: 26, height: 26)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.hand)
-
-            // Text (tap to edit; tap again to expand long text)
-            if editing {
-                TextField("", text: $draft)
-                    .textFieldStyle(.plain)
-                    .font(.ui(13.5, weight: .medium))
-                    .foregroundColor(theme.text)
-                    .focused($editFocused)
-                    .onSubmit { commitEdit() }
-                    .onChange(of: editFocused) { focused in if !focused { commitEdit() } }
-            } else {
-                Text(task.text)
-                    .font(.ui(13.5, weight: expanded ? .regular : .medium))
-                    .foregroundColor(task.done ? theme.textFaint : theme.text)
-                    .strikethrough(task.done, color: theme.textFaint)
-                    .lineLimit(expanded ? nil : 1)
-                    .help(task.text)
-                    .contentShape(Rectangle())
-                    .onTapGesture(count: 2) { beginEdit() }
-                    .onTapGesture { expanded.toggle() }
-            }
-
+            checkbox
+            taskText
             Spacer(minLength: 6)
-
-            // Repeat badge
-            if task.repeatRule != .never {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(theme.textFaint)
-                    .help("Repeats \(task.repeatRule.label.lowercased())")
-            }
-
-            // Date chip / set-date menu. Shown when the task is dated AND the chip
-            // isn't redundant with its group header, or on hover (to set/change a
-            // date). Idle non-dated rows carry no Menu, so taps aren't captured.
-            if (task.due != nil && showDateLabel) || hovering {
-                dateMenu
-            }
-
-            // Flag (solid when set, faint on hover)
-            if task.pri || hovering {
-                Button(action: onFlag) {
-                    Image(systemName: task.pri ? "flag.fill" : "flag")
-                        .font(.system(size: 12))
-                        .foregroundColor(task.pri ? theme.accentRed : theme.textFaint)
-                }
-                .buttonStyle(.hand)
-            }
-
-            // Delete (hover only)
-            if hovering {
-                Button(action: onDelete) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(theme.textFaint)
-                }
-                .buttonStyle(.hand)
-                .help("Delete task")
-            }
+            trailing
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 9)
@@ -423,50 +308,121 @@ private struct TaskRow: View {
         .onHover { hovering = $0 }
     }
 
+    private var checkbox: some View {
+        Button(action: onToggle) {
+            ZStack {
+                Circle()
+                    .strokeBorder(task.done ? theme.accentGreen : theme.textGhost, lineWidth: 1.6)
+                    .frame(width: 20, height: 20)
+                if task.done {
+                    Circle().fill(theme.accentGreen).frame(width: 20, height: 20)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
+            .frame(width: 26, height: 26)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.hand)
+    }
+
     @ViewBuilder
-    private var dateMenu: some View {
-        Menu {
-            Button { onPreset(.today) } label: { Label("Today", systemImage: "calendar") }
-            Button { onPreset(.tomorrow) } label: { Label("Tomorrow", systemImage: "calendar") }
-            Button { onPreset(.thisWeekend) } label: { Label("This weekend", systemImage: "calendar") }
-            Button { onPreset(.nextWeek) } label: { Label("Next week", systemImage: "calendar") }
-            Button { onPickDate() } label: { Label("Pick a date\u{2026}", systemImage: "calendar") }
-            if task.due != nil {
-                Button(role: .destructive) { onClearDate() } label: { Label("Clear date", systemImage: "xmark") }
-            }
-            Divider()
-            Menu("Repeat") {
-                ForEach(TaskRepeat.allCases, id: \.self) { rule in
-                    Button { onRepeat(rule) } label: {
-                        if task.repeatRule == rule {
-                            Label(rule.label, systemImage: "checkmark")
-                        } else {
-                            Text(rule.label)
-                        }
-                    }
+    private var taskText: some View {
+        if editing {
+            TextField("", text: $draft)
+                .textFieldStyle(.plain)
+                .font(.ui(13.5, weight: .medium))
+                .foregroundColor(theme.text)
+                .focused($editFocused)
+                .onSubmit { commitEdit() }
+                .onChange(of: editFocused) { focused in if !focused { commitEdit() } }
+        } else {
+            Text(task.text)
+                .font(.ui(13.5, weight: expanded ? .regular : .medium))
+                .foregroundColor(task.done ? theme.textFaint : theme.text)
+                .strikethrough(task.done, color: theme.textFaint)
+                .lineLimit(expanded ? nil : 1)
+                .help(task.text)
+                .contentShape(Rectangle())
+                .onTapGesture(count: 2) { beginEdit() }
+                .onTapGesture { expanded.toggle() }
+        }
+    }
+
+    private var trailing: some View {
+        HStack(spacing: 13) {
+            // Repeat indicator — shown whenever the task repeats (darker), opens the
+            // date/repeat card.
+            if task.repeatRule != .never {
+                trailingIcon("arrow.2.squarepath", size: 12, weight: .semibold, color: theme.textMuted) {
+                    showDateMenu = true
                 }
+                .help("Repeats \(task.repeatRule.label.lowercased())")
             }
-        } label: {
-            if showDateLabel, let label = task.dueLabel() {
-                let tint = task.isOverdue() ? theme.accentRed : theme.accentBlue
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar").font(.system(size: 9))
-                    Text(label).font(.mono(10, weight: .semibold))
-                }
-                .foregroundColor(tint)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 4)
-                .background(tint.opacity(0.12))
-                .cornerRadius(6)
+
+            // Date: chip when idle + dated + non-redundant; calendar icon on hover.
+            if hovering {
+                trailingIcon("calendar", size: 13, weight: .regular, color: theme.textGhost) { showDateMenu = true }
+            } else if showDateLabel, let label = task.dueLabel() {
+                dateChip(label)
+            }
+
+            // Flag: solid red when flagged; faint outline on hover.
+            if task.pri {
+                trailingIcon("flag.fill", size: 12, weight: .regular, color: theme.accentRed) { onFlag() }
             } else if hovering {
-                Image(systemName: "calendar")
-                    .font(.system(size: 12))
-                    .foregroundColor(theme.textFaint)
+                trailingIcon("flag", size: 12, weight: .regular, color: theme.textGhost) { onFlag() }
+            }
+
+            // Delete — hover only.
+            if hovering {
+                trailingIcon("xmark", size: 11, weight: .semibold, color: theme.textGhost) { onDelete() }
+                    .help("Delete task")
             }
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
+        .popover(isPresented: $showDateMenu, arrowEdge: .bottom) {
+            TaskDateMenuCard(
+                task: task,
+                onSetDate: { onSetDate($0); showDateMenu = false },
+                onRepeat: { onRepeat($0) },
+                onPickDate: {
+                    showDateMenu = false
+                    pickedDate = task.due ?? Date()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { showDatePicker = true }
+                }
+            )
+        }
+        .popover(isPresented: $showDatePicker, arrowEdge: .bottom) {
+            DatePickerCard(date: $pickedDate) { onSetDate($0); showDatePicker = false }
+        }
+    }
+
+    private func trailingIcon(_ name: String, size: CGFloat, weight: Font.Weight, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: name)
+                .font(.system(size: size, weight: weight))
+                .foregroundColor(color)
+                .frame(width: 18, height: 18)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.hand)
+    }
+
+    private func dateChip(_ label: String) -> some View {
+        let overdue = task.isOverdue()
+        return Button(action: { showDateMenu = true }) {
+            HStack(spacing: 4) {
+                Image(systemName: "calendar").font(.system(size: 9))
+                Text(label).font(.mono(10, weight: .medium))
+            }
+            .foregroundColor(overdue ? theme.accentRed : theme.textMuted)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(overdue ? theme.accentRed.opacity(0.1) : theme.fieldBg)
+            .cornerRadius(6)
+        }
+        .buttonStyle(.hand)
     }
 
     private func beginEdit() {
@@ -480,5 +436,159 @@ private struct TaskRow: View {
             onEdit(draft)
             editing = false
         }
+    }
+}
+
+// MARK: - Per-task date / repeat card (matches the designer mockup)
+
+private struct TaskDateMenuCard: View {
+    let task: TodoTask
+    let onSetDate: (Date?) -> Void
+    let onRepeat: (TaskRepeat) -> Void
+    let onPickDate: () -> Void
+
+    @Environment(\.theme) var theme
+
+    private static let fmt: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "d MMM"; return f
+    }()
+
+    private func presetDateString(_ scope: TaskDateScope) -> String {
+        guard let d = VaultViewModel.presetDate(scope) else { return "" }
+        return Self.fmt.string(from: d)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            presetRow("Today", .today)
+            presetRow("Tomorrow", .tomorrow)
+            presetRow("This weekend", .thisWeekend)
+            presetRow("Next week", .nextWeek)
+            TodoMenuRow(icon: "calendar", label: "Pick a date\u{2026}", action: onPickDate)
+
+            divider
+            if task.due != nil {
+                TodoMenuRow(icon: "xmark", label: "Clear date", tint: theme.accentRed) { onSetDate(nil) }
+                divider
+            }
+
+            Text("REPEAT")
+                .font(.ui(9.5, weight: .bold)).tracking(0.7)
+                .foregroundColor(theme.textFaint)
+                .padding(.horizontal, 10).padding(.top, 3).padding(.bottom, 3)
+
+            ForEach(TaskRepeat.allCases, id: \.self) { rule in
+                TodoMenuRow(label: rule.label, checked: task.repeatRule == rule) { onRepeat(rule) }
+            }
+        }
+        .padding(6)
+        .frame(width: 236)
+        .background(theme.dropBg)
+    }
+
+    private var divider: some View {
+        Divider().overlay(theme.cardBorder).padding(.horizontal, 6).padding(.vertical, 4)
+    }
+
+    private func presetRow(_ label: String, _ scope: TaskDateScope) -> some View {
+        TodoMenuRow(icon: "calendar", label: label, trailing: presetDateString(scope)) {
+            onSetDate(VaultViewModel.presetDate(scope))
+        }
+    }
+}
+
+private struct TodoMenuRow: View {
+    var icon: String? = nil
+    var label: String
+    var trailing: String? = nil
+    var checked: Bool = false
+    var tint: Color? = nil
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                // Leading slot: indigo check (selected) > icon > empty (keeps labels aligned)
+                ZStack {
+                    if checked {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(theme.accentBlue)
+                    } else if let icon {
+                        Image(systemName: icon)
+                            .font(.system(size: 11))
+                            .foregroundColor(tint ?? theme.textMuted)
+                    }
+                }
+                .frame(width: 15)
+
+                Text(label)
+                    .font(.ui(12.5, weight: checked ? .semibold : .regular))
+                    .foregroundColor(tint ?? theme.text)
+
+                Spacer(minLength: 8)
+
+                if let trailing, !trailing.isEmpty {
+                    Text(trailing)
+                        .font(.mono(10.5))
+                        .foregroundColor(theme.textFaint)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .background(hovering ? theme.hoverBg : Color.clear)
+            .cornerRadius(7)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+}
+
+// MARK: - Styled graphical date picker (shared by task rows + scope filter)
+
+private struct DatePickerCard: View {
+    @Binding var date: Date
+    let onSet: (Date) -> Void
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Pick a date")
+                    .font(.ui(12, weight: .semibold))
+                    .foregroundColor(theme.text)
+                Spacer()
+                Text(date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                    .font(.mono(11, weight: .semibold))
+                    .foregroundColor(theme.accentBlue)
+            }
+
+            DatePicker("", selection: $date, displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .labelsHidden()
+                .tint(theme.accentBlue)
+                .accentColor(theme.accentBlue)
+                .frame(width: 248)
+
+            Button(action: { onSet(date) }) {
+                Text("Set date")
+                    .font(.ui(12, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+                    .background(theme.accentBlue)
+                    .cornerRadius(9)
+            }
+            .buttonStyle(.hand)
+        }
+        .padding(16)
+        .frame(width: 286)
+        .background(theme.dropBg)
+        .environment(\.font, .ui(13))
     }
 }
