@@ -70,8 +70,6 @@ struct VaultContainerView: View {
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
     @State private var taskAnchors: [UUID: CGRect] = [:]
     @State private var taskPickerDate = Date()
-    /// True when the window is narrow — collapses the header to icons only.
-    @State private var isCompactHeader = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -243,36 +241,32 @@ struct VaultContainerView: View {
     private var listHeader: some View {
         VStack(spacing: 0) {
             HStack(spacing: 11) {
-                // Gradient crest
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(
-                            LinearGradient(
-                                colors: [theme.accentBlue, Color(hex: "8a6bea")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                // Gradient crest — doubles as the lock control: shows an open padlock
+                // while unlocked; click it to lock the vault. (No separate lock chip.)
+                Button(action: { vault.lock() }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                LinearGradient(
+                                    colors: [theme.accentBlue, Color(hex: "8a6bea")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                        .frame(width: 34, height: 34)
-                        .shadow(color: theme.accentBlue.opacity(0.4), radius: 3, y: 2)
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.white)
-                }
-
-                // Vault name + lock state. In the narrow window we drop the "Flapsy"
-                // name and show the lock state as an icon only.
-                if isCompactHeader {
-                    LockChip(compact: true) { vault.lock() }
-                } else {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Flapsy")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(theme.text)
-                            .lineLimit(1)
-                        LockChip { vault.lock() }
+                            .frame(width: 34, height: 34)
+                            .shadow(color: theme.accentBlue.opacity(0.4), radius: 3, y: 2)
+                        Image(systemName: "lock.open.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
                     }
                 }
+                .buttonStyle(.hand)
+                .help("Unlocked — click to lock")
+
+                Text("Flapsy")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(theme.text)
+                    .lineLimit(1)
 
                 Spacer(minLength: 6)
 
@@ -329,14 +323,6 @@ struct VaultContainerView: View {
                 .frame(height: 1)
         }
         .padding(.top, 8)
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(key: ViewWidthKey.self, value: geo.size.width)
-            }
-        )
-        .onPreferenceChange(ViewWidthKey.self) { width in
-            isCompactHeader = width < 380
-        }
     }
 
     private func toggleMenu(_ kind: HeaderMenuKind) {
@@ -546,59 +532,6 @@ struct HeaderMenuAnchorKey: PreferenceKey {
 
 /// Lock-state chip in the header. Shows a live green dot + "Unlocked"; on hover it
 /// swaps to an accent "Lock now" affordance. Tapping locks the vault.
-private struct LockChip: View {
-    var compact: Bool = false
-    let action: () -> Void
-    @Environment(\.theme) var theme
-    @State private var hovering = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                if hovering {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: compact ? 13 : 10, weight: .semibold))
-                        .foregroundColor(theme.accentBlueLt)
-                    if !compact {
-                        Text("Lock now")
-                            .font(.system(size: 11.5, weight: .semibold))
-                            .foregroundColor(theme.accentBlueLt)
-                            .fixedSize()
-                    }
-                } else {
-                    Circle()
-                        .fill(theme.accentGreen)
-                        .frame(width: 7, height: 7)
-                        .overlay(
-                            Circle()
-                                .stroke(theme.accentGreen.opacity(0.25), lineWidth: 3)
-                        )
-                    if !compact {
-                        Text("Unlocked")
-                            .font(.system(size: 11.5, weight: .medium))
-                            .foregroundColor(theme.textMuted)
-                            .fixedSize()
-                    }
-                }
-            }
-            .padding(.horizontal, compact ? 5 : 7)
-            .padding(.vertical, compact ? 5 : 3)
-            .background(hovering ? theme.accentBlue.opacity(0.12) : Color.clear)
-            .cornerRadius(7)
-        }
-        .buttonStyle(.hand)
-        .help(compact ? "Unlocked — click to lock" : "Lock vault now")
-        .onHover { hovering = $0 }
-    }
-}
-
-/// Reports a view's width so the header can collapse to a compact layout.
-struct ViewWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
 
 /// 30×30 transparent icon button matching the design's `.iconbtn` (muted icon,
 /// field background + ink icon on hover). Optional warning alert dot.
