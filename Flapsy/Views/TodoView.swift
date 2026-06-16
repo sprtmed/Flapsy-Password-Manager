@@ -89,37 +89,47 @@ struct TodoView: View {
     // MARK: - Filters
 
     private var filterRow: some View {
-        HStack(spacing: 5) {
-            ForEach(TaskStatusFilter.allCases, id: \.self) { status in
-                StatusPill(status: status, active: vault.todoStatus == status) {
-                    vault.todoStatus = status
+        GeometryReader { geo in
+            // When the row is narrow, collapse the scope chip to an icon so the
+            // All/Active/Done segment isn't crammed edge-to-edge.
+            let compact = geo.size.width < 300
+            HStack(spacing: 5) {
+                ForEach(TaskStatusFilter.allCases, id: \.self) { status in
+                    StatusPill(status: status, active: vault.todoStatus == status) {
+                        vault.todoStatus = status
+                    }
                 }
+
+                Rectangle().fill(theme.inputBorder).frame(width: 1, height: 16)
+
+                // Flag-only tab
+                Button(action: { vault.todoFlagOnly.toggle() }) {
+                    Image(systemName: vault.todoFlagOnly ? "flag.fill" : "flag")
+                        .font(.system(size: 12))
+                        .foregroundColor(vault.todoFlagOnly ? theme.accentRed : theme.textMuted)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 5)
+                        .background(vault.todoFlagOnly ? theme.accentRed.opacity(0.12) : Color.clear)
+                        .cornerRadius(7)
+                }
+                .buttonStyle(.hand)
+
+                Spacer()
+
+                scopeChip(compact: compact)
             }
-
-            Rectangle().fill(theme.inputBorder).frame(width: 1, height: 16)
-
-            // Flag-only tab
-            Button(action: { vault.todoFlagOnly.toggle() }) {
-                Image(systemName: vault.todoFlagOnly ? "flag.fill" : "flag")
-                    .font(.system(size: 12))
-                    .foregroundColor(vault.todoFlagOnly ? theme.accentRed : theme.textMuted)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 5)
-                    .background(vault.todoFlagOnly ? theme.accentRed.opacity(0.12) : Color.clear)
-                    .cornerRadius(7)
-            }
-            .buttonStyle(.hand)
-
-            Spacer()
-
-            scopeMenu
+            .frame(width: geo.size.width, height: 30)
         }
+        .frame(height: 30)
         .padding(.horizontal, 20)
         .padding(.bottom, 8)
     }
 
-    private var scopeMenu: some View {
+    private func scopeChip(compact: Bool) -> some View {
         let isOpen = vault.openHeaderMenu == .todoScope
+        // Keep the label when wide, or when a non-default filter is active (so the
+        // current scope stays visible); collapse to icon only for the narrow default.
+        let showLabel = !compact || vault.todoScope != .anytime
         return Button(action: {
             withAnimation(.easeOut(duration: 0.12)) {
                 vault.openHeaderMenu = isOpen ? nil : .todoScope
@@ -127,7 +137,9 @@ struct TodoView: View {
         }) {
             HStack(spacing: 5) {
                 Image(systemName: "calendar").font(.system(size: 11))
-                Text(vault.todoScope.label).font(.ui(11, weight: .medium))
+                if showLabel {
+                    Text(vault.todoScope.label).font(.ui(11, weight: .medium))
+                }
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8, weight: .semibold))
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
