@@ -59,7 +59,7 @@ struct ContentView: View {
 
 /// Identifies which header/list dropdown is open. Top-level so the list's sort
 /// chip can drive the same menu system the + / … buttons use.
-enum HeaderMenuKind: Hashable { case new, more, sort }
+enum HeaderMenuKind: Hashable { case new, more, sort, todoScope }
 
 /// Container for all vault panels (list, add, generator, tags, settings)
 struct VaultContainerView: View {
@@ -349,6 +349,18 @@ struct VaultContainerView: View {
                     HeaderMenuItem(label: option.rawValue, selected: vault.sortOption == option) {
                         selectMenu { vault.sortOption = option }
                     }
+                }
+            case .todoScope:
+                HeaderMenuItem(label: "Anytime", selected: vault.todoScope == .anytime) { selectMenu { vault.todoScope = .anytime } }
+                HeaderMenuItem(label: "Today", selected: vault.todoScope == .today) { selectMenu { vault.todoScope = .today } }
+                HeaderMenuItem(label: "Tomorrow", selected: vault.todoScope == .tomorrow) { selectMenu { vault.todoScope = .tomorrow } }
+                HeaderMenuItem(label: "This weekend", selected: vault.todoScope == .thisWeekend) { selectMenu { vault.todoScope = .thisWeekend } }
+                HeaderMenuItem(label: "Next week", selected: vault.todoScope == .nextWeek) { selectMenu { vault.todoScope = .nextWeek } }
+                HeaderMenuItem(label: "Overdue", selected: vault.todoScope == .overdue) { selectMenu { vault.todoScope = .overdue } }
+                HeaderMenuItem(label: "No date", selected: vault.todoScope == .noDate) { selectMenu { vault.todoScope = .noDate } }
+                HeaderMenuDivider()
+                HeaderMenuItem(icon: "calendar", label: "Pick a date\u{2026}") {
+                    selectMenu { vault.showTodoScopeDatePicker = true }
                 }
             }
         }

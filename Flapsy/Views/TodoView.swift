@@ -8,7 +8,6 @@ struct TodoView: View {
 
     @FocusState private var addFocused: Bool
     @State private var datePickerTask: UUID? = nil
-    @State private var scopePickerShown = false
     @State private var pickedDate = Date()
 
     var body: some View {
@@ -134,49 +133,40 @@ struct TodoView: View {
     }
 
     private var scopeMenu: some View {
-        Menu {
-            scopeButton("Anytime", .anytime)
-            scopeButton("Today", .today)
-            scopeButton("Tomorrow", .tomorrow)
-            scopeButton("This weekend", .thisWeekend)
-            scopeButton("Next week", .nextWeek)
-            scopeButton("Overdue", .overdue)
-            scopeButton("No date", .noDate)
-            Divider()
-            Button {
-                pickedDate = Date()
-                scopePickerShown = true
-            } label: {
-                Label("Pick a date\u{2026}", systemImage: "calendar")
+        let isOpen = vault.openHeaderMenu == .todoScope
+        return Button(action: {
+            withAnimation(.easeOut(duration: 0.12)) {
+                vault.openHeaderMenu = isOpen ? nil : .todoScope
             }
-        } label: {
+        }) {
             HStack(spacing: 5) {
                 Image(systemName: "calendar").font(.system(size: 11))
                 Text(vault.todoScope.label).font(.ui(11, weight: .medium))
-                Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .rotationEffect(.degrees(isOpen ? 180 : 0))
             }
-            .foregroundColor(theme.textMuted)
+            .foregroundColor(isOpen ? theme.text : theme.textMuted)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(theme.fieldBg)
             .cornerRadius(7)
             .fixedSize()
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .popover(isPresented: $scopePickerShown) {
-            datePickerPopover { vault.todoScope = .pick($0) }
-        }
-    }
-
-    private func scopeButton(_ label: String, _ scope: TaskDateScope) -> some View {
-        Button(action: { vault.todoScope = scope }) {
-            if vault.todoScope == scope {
-                Label(label, systemImage: "checkmark")
-            } else {
-                Text(label)
+        .buttonStyle(.hand)
+        // Report the chip's frame into the shared anchored-menu system (same as
+        // the + / … / sort dropdowns).
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: HeaderMenuAnchorKey.self,
+                    value: [HeaderMenuKind.todoScope: geo.frame(in: .named("vaultContainer"))]
+                )
             }
+        )
+        // "Pick a date…" from the scope menu opens this popover.
+        .popover(isPresented: $vault.showTodoScopeDatePicker) {
+            datePickerPopover { vault.todoScope = .pick($0) }
         }
     }
 
@@ -313,6 +303,8 @@ private struct TaskRow: View {
                             .foregroundColor(.white)
                     }
                 }
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.hand)
 
@@ -347,8 +339,11 @@ private struct TaskRow: View {
                     .help("Repeats \(task.repeatRule.label.lowercased())")
             }
 
-            // Date chip / set-date menu
-            dateMenu
+            // Date chip / set-date menu (only when dated or hovering — keeps idle
+            // rows free of a native Menu that would otherwise capture taps)
+            if task.due != nil || hovering {
+                dateMenu
+            }
 
             // Flag (solid when set, faint on hover)
             if task.pri || hovering {
@@ -374,6 +369,7 @@ private struct TaskRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 9)
         .background(hovering ? theme.hoverBg : Color.clear)
+        .contentShape(Rectangle())
         .onHover { hovering = $0 }
     }
 
