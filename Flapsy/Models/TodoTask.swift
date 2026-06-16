@@ -106,7 +106,7 @@ enum TaskDateScope: Equatable {
 
 /// Agenda buckets a task falls into, in display order.
 enum TaskBucket: Int, CaseIterable {
-    case overdue, today, tomorrow, thisWeek, later, noDate, completed
+    case overdue, today, tomorrow, thisWeek, nextWeek, later, noDate, completed
 
     var title: String {
         switch self {
@@ -114,6 +114,7 @@ enum TaskBucket: Int, CaseIterable {
         case .today:     return "TODAY"
         case .tomorrow:  return "TOMORROW"
         case .thisWeek:  return "THIS WEEK"
+        case .nextWeek:  return "NEXT WEEK"
         case .later:     return "LATER"
         case .noDate:    return "NO DATE"
         case .completed: return "COMPLETED"
@@ -122,8 +123,16 @@ enum TaskBucket: Int, CaseIterable {
 }
 
 extension TodoTask {
+    /// End of the current calendar week (exclusive) and of the following week, so
+    /// bucketing and labels agree on what "this week" / "next week" mean.
+    static func weekBoundaries(now: Date, calendar: Calendar) -> (thisWeekEnd: Date, nextWeekEnd: Date)? {
+        guard let twe = calendar.dateInterval(of: .weekOfYear, for: now)?.end else { return nil }
+        let nwe = calendar.date(byAdding: .day, value: 7, to: twe) ?? twe
+        return (twe, nwe)
+    }
+
     /// Short label for the due date, relative to today (e.g. Overdue / Today /
-    /// Tomorrow / "Fri" / "Jul 3"). Nil when there's no date.
+    /// Tomorrow / weekday "Tue" for this & next week / "6 Jul" beyond). Nil when no date.
     func dueLabel(now: Date = Date(), calendar: Calendar = .current) -> String? {
         guard let due = due else { return nil }
         let startToday = calendar.startOfDay(for: now)
@@ -133,8 +142,9 @@ extension TodoTask {
         if days == 0 { return "Today" }
         if days == 1 { return "Tomorrow" }
         let f = DateFormatter()
-        if days < 7 {
-            f.dateFormat = "EEE"          // "Sat"
+        // Weekday for anything inside this or next calendar week; date beyond that.
+        if let b = TodoTask.weekBoundaries(now: now, calendar: calendar), startDue < b.nextWeekEnd {
+            f.dateFormat = "EEE"          // "Tue"
         } else {
             f.dateFormat = "d MMM"        // "6 Jul"
         }
@@ -158,11 +168,10 @@ extension TodoTask {
         if days < 0 { return .overdue }
         if days == 0 { return .today }
         if days == 1 { return .tomorrow }
-        // "This week" = anything still inside the current calendar week. Dates in
-        // the next calendar week (e.g. the "Next week" preset) fall into "Later".
-        if let weekEnd = calendar.dateInterval(of: .weekOfYear, for: now)?.end,
-           startDue < weekEnd {
-            return .thisWeek
+        // This calendar week → This week; the following week → Next week; beyond → Later.
+        if let b = TodoTask.weekBoundaries(now: now, calendar: calendar) {
+            if startDue < b.thisWeekEnd { return .thisWeek }
+            if startDue < b.nextWeekEnd { return .nextWeek }
         }
         return .later
     }

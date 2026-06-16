@@ -361,11 +361,11 @@ private struct TaskRow: View {
                 trailingIcon("calendar", size: 13, weight: .regular, color: theme.textGhost, action: onOpenDateMenu)
             }
 
-            // Flag: solid red when flagged; faint outline on hover.
-            if task.pri {
-                trailingIcon("flag.fill", size: 12, weight: .regular, color: theme.accentRed) { onFlag() }
-            } else if active {
-                trailingIcon("flag", size: 12, weight: .regular, color: theme.textGhost) { onFlag() }
+            // Flag: a single stable button (icon swaps) so the tap isn't lost when
+            // toggling between the faint/solid states. Solid red when flagged.
+            if task.pri || active {
+                trailingIcon(task.pri ? "flag.fill" : "flag", size: 12, weight: .regular,
+                             color: task.pri ? theme.accentRed : theme.textGhost) { onFlag() }
             }
 
             // Delete — hover only.
