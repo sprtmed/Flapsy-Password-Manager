@@ -52,7 +52,7 @@ struct TodoView: View {
             }
             .frame(height: 4)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.top, 10)
         .padding(.bottom, 8)
     }
@@ -82,7 +82,7 @@ struct TodoView: View {
         .padding(.vertical, 11)
         .background(theme.inputBg)
         .cornerRadius(10)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.bottom, 10)
     }
 
@@ -114,7 +114,7 @@ struct TodoView: View {
 
             scopeMenu
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.bottom, 8)
     }
 
@@ -188,7 +188,7 @@ struct TodoView: View {
                             .font(.mono(10))
                             .foregroundColor(theme.textFaint)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20)
                     .padding(.top, 12)
                     .padding(.bottom, 4)
 
@@ -283,13 +283,13 @@ private struct TaskRow: View {
             Spacer(minLength: 6)
             trailing
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.vertical, 9)
         // Inset, rounded hover background (not full-bleed) — matches the mockup.
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(hovering || isMenuOpen ? theme.hoverBg : Color.clear)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 12)
         )
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
