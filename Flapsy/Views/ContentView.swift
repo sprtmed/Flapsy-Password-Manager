@@ -70,8 +70,6 @@ struct VaultContainerView: View {
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
     @State private var taskAnchors: [UUID: CGRect] = [:]
     @State private var taskPickerDate = Date()
-    /// Popover width; the "Flapsy" name is hidden below this when the window is narrow.
-    @State private var containerWidth: CGFloat = 999
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -177,12 +175,6 @@ struct VaultContainerView: View {
             }
         }
         .coordinateSpace(name: "vaultContainer")
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(key: ViewWidthKey.self, value: geo.size.width)
-            }
-        )
-        .onPreferenceChange(ViewWidthKey.self) { containerWidth = $0 }
         .onPreferenceChange(HeaderMenuAnchorKey.self) { menuAnchors = $0 }
         .onPreferenceChange(TaskMenuAnchorKey.self) { taskAnchors = $0 }
         .ignoresSafeArea(.container, edges: .top)
@@ -248,6 +240,7 @@ struct VaultContainerView: View {
 
     private var listHeader: some View {
         VStack(spacing: 0) {
+          GeometryReader { geo in
             HStack(spacing: 11) {
                 // Gradient crest — doubles as the lock control: shows an open padlock
                 // while unlocked; click it to lock the vault. (No separate lock chip.)
@@ -271,13 +264,15 @@ struct VaultContainerView: View {
                 .buttonStyle(.hand)
                 .help("Unlocked — click to lock")
 
-                // Show the name only in the wide window; the narrow view keeps just
-                // the logo + action icons.
-                if containerWidth >= 380 {
+                // Show the name only when the header is wide enough to fit it; in the
+                // narrow window it's removed entirely (not truncated). geo is the
+                // header's actual laid-out width, so this adapts to the icon count too.
+                if geo.size.width >= 350 {
                     Text("Flapsy")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(theme.text)
                         .lineLimit(1)
+                        .fixedSize()
                 }
 
                 Spacer(minLength: 6)
@@ -326,9 +321,12 @@ struct VaultContainerView: View {
                     .background(anchorReporter(.more))
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 13)
-            .padding(.bottom, 12)
+            .frame(width: geo.size.width, height: 34)
+          }
+          .frame(height: 34)
+          .padding(.horizontal, 14)
+          .padding(.top, 13)
+          .padding(.bottom, 12)
 
             Rectangle()
                 .fill(theme.cardBorder)
@@ -541,14 +539,6 @@ struct HeaderMenuAnchorKey: PreferenceKey {
 }
 
 // MARK: - Header Components
-
-/// Reports a view's width so the header can hide the app name in a narrow window.
-struct ViewWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 999
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
 
 /// 30×30 transparent icon button matching the design's `.iconbtn` (muted icon,
 /// field background + ink icon on hover). Optional warning alert dot.
