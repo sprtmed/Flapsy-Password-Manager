@@ -178,6 +178,9 @@ struct TodoView: View {
                 ForEach(vault.filteredTasks) { task in
                     taskRow(task)
                 }
+                if vault.hasVisibleCompleted {
+                    clearCompletedButton
+                }
             }
             .padding(.vertical, 4)
         }
@@ -205,9 +208,30 @@ struct TodoView: View {
                         taskRow(task)
                     }
                 }
+
+                if vault.hasVisibleCompleted {
+                    clearCompletedButton
+                }
             }
             .padding(.bottom, 8)
         }
+    }
+
+    private var clearCompletedButton: some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.15)) { vault.clearCompletedTasks() }
+        }) {
+            Text("Clear completed")
+                .font(.ui(12, weight: .semibold))
+                .foregroundColor(theme.accentRed)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(theme.fieldBg)
+                .cornerRadius(8)
+        }
+        .buttonStyle(.hand)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 10)
     }
 
     private var emptyState: some View {
@@ -247,24 +271,33 @@ struct TodoView: View {
     // MARK: - Date picker popover
 
     private func datePickerPopover(_ apply: @escaping (Date) -> Void) -> some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
+            Text("Pick a date")
+                .font(.ui(12, weight: .semibold))
+                .foregroundColor(theme.text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
             DatePicker("", selection: $pickedDate, displayedComponents: .date)
                 .datePickerStyle(.graphical)
                 .labelsHidden()
-                .frame(width: 260)
+                .tint(theme.accentBlue)
+                .frame(width: 256)
+
             Button(action: { apply(pickedDate) }) {
                 Text("Set date")
                     .font(.ui(12, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 9)
                     .background(theme.accentBlue)
-                    .cornerRadius(8)
+                    .cornerRadius(9)
             }
             .buttonStyle(.hand)
         }
-        .padding(14)
-        .frame(width: 288)
+        .padding(16)
+        .frame(width: 290)
+        .background(theme.dropBg)
+        .environment(\.font, .ui(13))
     }
 }
 

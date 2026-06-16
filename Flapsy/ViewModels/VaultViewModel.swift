@@ -1065,6 +1065,16 @@ final class VaultViewModel: ObservableObject {
         tasks.removeAll { $0.id == id }
     }
 
+    /// Removes all completed (non-repeating) tasks.
+    func clearCompletedTasks() {
+        tasks.removeAll { $0.done }
+    }
+
+    /// Whether any completed task is currently visible under the active filters.
+    var hasVisibleCompleted: Bool {
+        filteredTasks.contains { $0.done }
+    }
+
     func toggleTaskFlag(_ id: UUID) {
         guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[idx].pri.toggle()
