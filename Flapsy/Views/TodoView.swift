@@ -24,8 +24,6 @@ struct TodoView: View {
                 flatList
             }
         }
-        // Slightly wider left/right breathing room from the window edge.
-        .padding(.horizontal, 6)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { addFocused = true }
         }

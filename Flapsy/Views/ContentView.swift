@@ -70,6 +70,8 @@ struct VaultContainerView: View {
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
     @State private var taskAnchors: [UUID: CGRect] = [:]
     @State private var taskPickerDate = Date()
+    /// Popover width; the "Flapsy" name is hidden below this when the window is narrow.
+    @State private var containerWidth: CGFloat = 999
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -175,6 +177,12 @@ struct VaultContainerView: View {
             }
         }
         .coordinateSpace(name: "vaultContainer")
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: ViewWidthKey.self, value: geo.size.width)
+            }
+        )
+        .onPreferenceChange(ViewWidthKey.self) { containerWidth = $0 }
         .onPreferenceChange(HeaderMenuAnchorKey.self) { menuAnchors = $0 }
         .onPreferenceChange(TaskMenuAnchorKey.self) { taskAnchors = $0 }
         .ignoresSafeArea(.container, edges: .top)
@@ -263,10 +271,14 @@ struct VaultContainerView: View {
                 .buttonStyle(.hand)
                 .help("Unlocked — click to lock")
 
-                Text("Flapsy")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(theme.text)
-                    .lineLimit(1)
+                // Show the name only in the wide window; the narrow view keeps just
+                // the logo + action icons.
+                if containerWidth >= 380 {
+                    Text("Flapsy")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(theme.text)
+                        .lineLimit(1)
+                }
 
                 Spacer(minLength: 6)
 
@@ -530,8 +542,13 @@ struct HeaderMenuAnchorKey: PreferenceKey {
 
 // MARK: - Header Components
 
-/// Lock-state chip in the header. Shows a live green dot + "Unlocked"; on hover it
-/// swaps to an accent "Lock now" affordance. Tapping locks the vault.
+/// Reports a view's width so the header can hide the app name in a narrow window.
+struct ViewWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 999
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
 
 /// 30×30 transparent icon button matching the design's `.iconbtn` (muted icon,
 /// field background + ink icon on hover). Optional warning alert dot.
