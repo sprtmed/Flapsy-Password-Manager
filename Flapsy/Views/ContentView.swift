@@ -70,6 +70,8 @@ struct VaultContainerView: View {
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
     @State private var taskAnchors: [UUID: CGRect] = [:]
     @State private var taskPickerDate = Date()
+    /// True when the window is narrow — collapses the header to icons only.
+    @State private var isCompactHeader = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -258,13 +260,18 @@ struct VaultContainerView: View {
                         .foregroundColor(.white)
                 }
 
-                // Vault name + lock state
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Flapsy")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(theme.text)
-                        .lineLimit(1)
-                    LockChip { vault.lock() }
+                // Vault name + lock state. In the narrow window we drop the "Flapsy"
+                // name and show the lock state as an icon only.
+                if isCompactHeader {
+                    LockChip(compact: true) { vault.lock() }
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Flapsy")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(theme.text)
+                            .lineLimit(1)
+                        LockChip { vault.lock() }
+                    }
                 }
 
                 Spacer(minLength: 6)
@@ -322,6 +329,14 @@ struct VaultContainerView: View {
                 .frame(height: 1)
         }
         .padding(.top, 8)
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: ViewWidthKey.self, value: geo.size.width)
+            }
+        )
+        .onPreferenceChange(ViewWidthKey.self) { width in
+            isCompactHeader = width < 380
+        }
     }
 
     private func toggleMenu(_ kind: HeaderMenuKind) {
@@ -532,6 +547,7 @@ struct HeaderMenuAnchorKey: PreferenceKey {
 /// Lock-state chip in the header. Shows a live green dot + "Unlocked"; on hover it
 /// swaps to an accent "Lock now" affordance. Tapping locks the vault.
 private struct LockChip: View {
+    var compact: Bool = false
     let action: () -> Void
     @Environment(\.theme) var theme
     @State private var hovering = false
@@ -541,12 +557,14 @@ private struct LockChip: View {
             HStack(spacing: 6) {
                 if hovering {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: compact ? 13 : 10, weight: .semibold))
                         .foregroundColor(theme.accentBlueLt)
-                    Text("Lock now")
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundColor(theme.accentBlueLt)
-                        .fixedSize()
+                    if !compact {
+                        Text("Lock now")
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundColor(theme.accentBlueLt)
+                            .fixedSize()
+                    }
                 } else {
                     Circle()
                         .fill(theme.accentGreen)
@@ -555,20 +573,30 @@ private struct LockChip: View {
                             Circle()
                                 .stroke(theme.accentGreen.opacity(0.25), lineWidth: 3)
                         )
-                    Text("Unlocked")
-                        .font(.system(size: 11.5, weight: .medium))
-                        .foregroundColor(theme.textMuted)
-                        .fixedSize()
+                    if !compact {
+                        Text("Unlocked")
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundColor(theme.textMuted)
+                            .fixedSize()
+                    }
                 }
             }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
+            .padding(.horizontal, compact ? 5 : 7)
+            .padding(.vertical, compact ? 5 : 3)
             .background(hovering ? theme.accentBlue.opacity(0.12) : Color.clear)
             .cornerRadius(7)
         }
         .buttonStyle(.hand)
-        .help("Lock vault now")
+        .help(compact ? "Unlocked — click to lock" : "Lock vault now")
         .onHover { hovering = $0 }
+    }
+}
+
+/// Reports a view's width so the header can collapse to a compact layout.
+struct ViewWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 

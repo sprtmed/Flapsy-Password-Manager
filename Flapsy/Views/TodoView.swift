@@ -89,7 +89,7 @@ struct TodoView: View {
     // MARK: - Filters
 
     private var filterRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 5) {
             ForEach(TaskStatusFilter.allCases, id: \.self) { status in
                 StatusPill(status: status, active: vault.todoStatus == status) {
                     vault.todoStatus = status
@@ -496,8 +496,10 @@ private struct StatusPill: View {
         Button(action: action) {
             Text(status.label)
                 .font(.ui(12, weight: .semibold))
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundColor(active ? theme.accentBlueLt : theme.textMuted)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 11)
                 .padding(.vertical, 5)
                 .background(active ? theme.pillBg : (hovering ? theme.fieldBg : Color.clear))
                 .cornerRadius(20)
