@@ -172,7 +172,9 @@ struct TodoView: View {
 
     private var flatList: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
+            // Plain VStack (not Lazy): the list is short and we need every row to
+            // re-render on data changes (done toggles, date edits) without recycling.
+            VStack(spacing: 0) {
                 ForEach(vault.filteredTasks) { task in
                     taskRow(task)
                 }
@@ -186,7 +188,7 @@ struct TodoView: View {
 
     private var agendaList: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(vault.todoAgenda, id: \.bucket) { group in
                     HStack {
                         Text(group.bucket.title)
