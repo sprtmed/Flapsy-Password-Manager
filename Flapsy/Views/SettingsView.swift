@@ -22,6 +22,7 @@ struct SettingsView: View {
                 favoritesDefaultSection
                 defaultSortSection
                 expandNotesSection
+                topNavSection
                 deleteConfirmSection
                 updateCheckSection
                 breachCheckSection
@@ -631,6 +632,41 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Text("Notes always open in full-height expanded view.")
+                .font(.ui(10))
+                .foregroundColor(theme.textFaint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - Top Navigation (Notes / To-Do as icons)
+
+    private var topNavSection: some View {
+        VStack(spacing: 10) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.accentBlueLt)
+                    Text("Notes in top bar")
+                        .font(.ui(13))
+                        .foregroundColor(theme.text)
+                }
+                Spacer()
+                FlapsyToggle(isOn: $settings.showNotesInTopBar)
+            }
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.accentBlueLt)
+                    Text("To-Do in top bar")
+                        .font(.ui(13))
+                        .foregroundColor(theme.text)
+                }
+                Spacer()
+                FlapsyToggle(isOn: $settings.showTodoInTopBar)
+            }
+            Text("Show Notes / To-Do as their own icon in the top bar instead of inside the … menu.")
                 .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)

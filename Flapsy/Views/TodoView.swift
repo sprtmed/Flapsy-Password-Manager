@@ -91,10 +91,12 @@ struct TodoView: View {
     private var filterRow: some View {
         HStack(spacing: 8) {
             ForEach(TaskStatusFilter.allCases, id: \.self) { status in
-                statusPill(status)
+                StatusPill(status: status, active: vault.todoStatus == status) {
+                    vault.todoStatus = status
+                }
             }
 
-            Rectangle().fill(theme.cardBorder).frame(width: 1, height: 16)
+            Rectangle().fill(theme.inputBorder).frame(width: 1, height: 16)
 
             // Flag-only tab
             Button(action: { vault.todoFlagOnly.toggle() }) {
@@ -114,20 +116,6 @@ struct TodoView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
-    }
-
-    private func statusPill(_ status: TaskStatusFilter) -> some View {
-        let active = vault.todoStatus == status
-        return Button(action: { vault.todoStatus = status }) {
-            Text(status.label)
-                .font(.ui(12, weight: .semibold))
-                .foregroundColor(active ? theme.accentBlueLt : theme.textMuted)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(active ? theme.pillBg : Color.clear)
-                .cornerRadius(20)
-        }
-        .buttonStyle(.hand)
     }
 
     private var scopeMenu: some View {
@@ -297,7 +285,12 @@ private struct TaskRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 9)
-        .background(hovering || isMenuOpen ? theme.hoverBg : Color.clear)
+        // Inset, rounded hover background (not full-bleed) — matches the mockup.
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(hovering || isMenuOpen ? theme.hoverBg : Color.clear)
+                .padding(.horizontal, 8)
+        )
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
     }
@@ -487,6 +480,30 @@ struct TaskDateMenuCard: View {
         TodoMenuRow(icon: "calendar", label: label, trailing: presetDateString(scope)) {
             onSetDate(VaultViewModel.presetDate(scope))
         }
+    }
+}
+
+/// Segmented status filter pill (All / Active / Done) with a neutral grey hover.
+private struct StatusPill: View {
+    let status: TaskStatusFilter
+    let active: Bool
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(status.label)
+                .font(.ui(12, weight: .semibold))
+                .foregroundColor(active ? theme.accentBlueLt : theme.textMuted)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(active ? theme.pillBg : (hovering ? theme.fieldBg : Color.clear))
+                .cornerRadius(20)
+        }
+        .buttonStyle(.hand)
+        .onHover { hovering = $0 }
     }
 }
 

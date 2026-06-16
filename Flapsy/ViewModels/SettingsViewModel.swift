@@ -30,6 +30,8 @@ final class SettingsViewModel: ObservableObject {
     @Published var breachCheckEnabled: Bool = false
     @Published var alwaysExpandNotes: Bool = false
     @Published var defaultSortOption: SortOption = .newestFirst
+    @Published var showNotesInTopBar: Bool = false
+    @Published var showTodoInTopBar: Bool = false
     @Published var lastBackupDate: Date? = nil
 
     // Runtime-only: current pin state for this session (not persisted)
@@ -72,6 +74,8 @@ final class SettingsViewModel: ObservableObject {
         breachCheckEnabled = settings.breachCheckEnabled
         alwaysExpandNotes = settings.alwaysExpandNotes
         defaultSortOption = SortOption(rawValue: settings.defaultSortOption) ?? .newestFirst
+        showNotesInTopBar = settings.showNotesInTopBar
+        showTodoInTopBar = settings.showTodoInTopBar
         lastBackupDate = settings.lastBackupDate
     }
 
@@ -94,6 +98,8 @@ final class SettingsViewModel: ObservableObject {
         breachCheckEnabled = false
         alwaysExpandNotes = false
         defaultSortOption = .newestFirst
+        showNotesInTopBar = false
+        showTodoInTopBar = false
         // lastBackupDate intentionally not reset
     }
 
@@ -116,6 +122,8 @@ final class SettingsViewModel: ObservableObject {
             breachCheckEnabled: breachCheckEnabled,
             alwaysExpandNotes: alwaysExpandNotes,
             defaultSortOption: defaultSortOption.rawValue,
+            showNotesInTopBar: showNotesInTopBar,
+            showTodoInTopBar: showTodoInTopBar,
             lastBackupDate: lastBackupDate
         )
     }

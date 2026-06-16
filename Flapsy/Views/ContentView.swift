@@ -276,9 +276,18 @@ struct VaultContainerView: View {
                     }
                     .background(anchorReporter(.new))
 
-                    HeaderIconButton(systemName: "note.text", help: "Notes") {
-                        vault.openHeaderMenu = nil
-                        vault.navigateToPanel(.notes)
+                    if settings.showNotesInTopBar {
+                        HeaderIconButton(systemName: "note.text", help: "Notes") {
+                            vault.openHeaderMenu = nil
+                            vault.navigateToPanel(.notes)
+                        }
+                    }
+
+                    if settings.showTodoInTopBar {
+                        HeaderIconButton(systemName: "checklist", help: "To-Do") {
+                            vault.openHeaderMenu = nil
+                            vault.navigateToPanel(.todo)
+                        }
                     }
 
                     HeaderIconButton(systemName: "gearshape", help: "Settings") {
@@ -409,8 +418,15 @@ struct VaultContainerView: View {
                 HeaderMenuItem(icon: "tag", label: "Categories") {
                     selectMenu { vault.navigateToPanel(.tags) }
                 }
-                HeaderMenuItem(icon: "checklist", label: "To-Do") {
-                    selectMenu { vault.navigateToPanel(.todo) }
+                if !settings.showNotesInTopBar {
+                    HeaderMenuItem(icon: "note.text", label: "Notes") {
+                        selectMenu { vault.navigateToPanel(.notes) }
+                    }
+                }
+                if !settings.showTodoInTopBar {
+                    HeaderMenuItem(icon: "checklist", label: "To-Do") {
+                        selectMenu { vault.navigateToPanel(.todo) }
+                    }
                 }
                 HeaderMenuItem(icon: "timer", label: "Pomodoro") {
                     selectMenu { vault.navigateToPanel(.pomodoro) }
@@ -434,10 +450,6 @@ struct VaultContainerView: View {
                 HeaderMenuItem(label: "Next week", selected: vault.todoScope == .nextWeek) { selectMenu { vault.todoScope = .nextWeek } }
                 HeaderMenuItem(label: "Overdue", selected: vault.todoScope == .overdue) { selectMenu { vault.todoScope = .overdue } }
                 HeaderMenuItem(label: "No date", selected: vault.todoScope == .noDate) { selectMenu { vault.todoScope = .noDate } }
-                HeaderMenuDivider()
-                HeaderMenuItem(icon: "calendar", label: "Pick a date\u{2026}") {
-                    selectMenu { vault.showTodoScopeDatePicker = true }
-                }
             }
         }
         .padding(5)

@@ -32,6 +32,9 @@ struct VaultSettings: Codable {
     var breachCheckEnabled: Bool
     var alwaysExpandNotes: Bool
     var defaultSortOption: String
+    /// Show Notes / To-Do as their own icon in the top nav (vs. under the … menu).
+    var showNotesInTopBar: Bool
+    var showTodoInTopBar: Bool
     var lastBackupDate: Date?
 
     static var defaults: VaultSettings {
@@ -52,7 +55,9 @@ struct VaultSettings: Codable {
             openURLCopyPassword: false,
             breachCheckEnabled: false,
             alwaysExpandNotes: false,
-            defaultSortOption: "Newest"
+            defaultSortOption: "Newest",
+            showNotesInTopBar: false,
+            showTodoInTopBar: false
         )
     }
 
@@ -76,6 +81,8 @@ struct VaultSettings: Codable {
         breachCheckEnabled = try container.decodeIfPresent(Bool.self, forKey: .breachCheckEnabled) ?? false
         alwaysExpandNotes = try container.decodeIfPresent(Bool.self, forKey: .alwaysExpandNotes) ?? false
         defaultSortOption = try container.decodeIfPresent(String.self, forKey: .defaultSortOption) ?? "Newest"
+        showNotesInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showNotesInTopBar) ?? false
+        showTodoInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showTodoInTopBar) ?? false
         lastBackupDate = try container.decodeIfPresent(Date.self, forKey: .lastBackupDate)
     }
 
@@ -91,6 +98,8 @@ struct VaultSettings: Codable {
          breachCheckEnabled: Bool = false,
          alwaysExpandNotes: Bool = false,
          defaultSortOption: String = "Newest",
+         showNotesInTopBar: Bool = false,
+         showTodoInTopBar: Bool = false,
          lastBackupDate: Date? = nil) {
         self.menuBarIcon = menuBarIcon
         self.menuBarShowLabel = menuBarShowLabel
@@ -109,6 +118,8 @@ struct VaultSettings: Codable {
         self.breachCheckEnabled = breachCheckEnabled
         self.alwaysExpandNotes = alwaysExpandNotes
         self.defaultSortOption = defaultSortOption
+        self.showNotesInTopBar = showNotesInTopBar
+        self.showTodoInTopBar = showTodoInTopBar
         self.lastBackupDate = lastBackupDate
     }
 }
