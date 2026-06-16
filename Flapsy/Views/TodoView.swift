@@ -7,7 +7,6 @@ struct TodoView: View {
     @Environment(\.theme) var theme
 
     @FocusState private var addFocused: Bool
-    @State private var pickedDate = Date()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -167,13 +166,6 @@ struct TodoView: View {
                 )
             }
         )
-        // "Pick a date…" from the scope menu opens this popover.
-        .popover(isPresented: $vault.showTodoScopeDatePicker) {
-            DatePickerCard(date: $pickedDate) {
-                vault.todoScope = .pick($0)
-                vault.showTodoScopeDatePicker = false
-            }
-        }
     }
 
     // MARK: - Lists
@@ -262,12 +254,15 @@ struct TodoView: View {
         TaskRow(
             task: task,
             showDateLabel: showDateLabel,
+            isMenuOpen: vault.openTaskDateMenu == task.id,
             onToggle: { vault.toggleTask(task.id) },
             onFlag: { vault.toggleTaskFlag(task.id) },
             onDelete: { vault.deleteTask(task.id) },
             onEdit: { vault.editTaskText(task.id, $0) },
-            onSetDate: { vault.setTaskDue(task.id, $0) },
-            onRepeat: { vault.setTaskRepeat(task.id, $0) }
+            onOpenDateMenu: {
+                vault.openTaskDatePicker = nil
+                vault.openTaskDateMenu = (vault.openTaskDateMenu == task.id) ? nil : task.id
+            }
         )
     }
 }
@@ -277,21 +272,18 @@ struct TodoView: View {
 private struct TaskRow: View {
     let task: TodoTask
     var showDateLabel: Bool = true
+    var isMenuOpen: Bool = false
     let onToggle: () -> Void
     let onFlag: () -> Void
     let onDelete: () -> Void
     let onEdit: (String) -> Void
-    let onSetDate: (Date?) -> Void
-    let onRepeat: (TaskRepeat) -> Void
+    let onOpenDateMenu: () -> Void
 
     @Environment(\.theme) var theme
     @State private var hovering = false
     @State private var editing = false
     @State private var draft = ""
     @State private var expanded = false
-    @State private var showDateMenu = false
-    @State private var showDatePicker = false
-    @State private var pickedDate = Date()
     @FocusState private var editFocused: Bool
 
     var body: some View {
@@ -303,7 +295,7 @@ private struct TaskRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 9)
-        .background(hovering ? theme.hoverBg : Color.clear)
+        .background(hovering || isMenuOpen ? theme.hoverBg : Color.clear)
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
     }
@@ -351,51 +343,47 @@ private struct TaskRow: View {
     }
 
     private var trailing: some View {
-        HStack(spacing: 13) {
+        let active = hovering || isMenuOpen
+        return HStack(spacing: 13) {
             // Repeat indicator — shown whenever the task repeats (darker), opens the
             // date/repeat card.
             if task.repeatRule != .never {
-                trailingIcon("arrow.2.squarepath", size: 12, weight: .semibold, color: theme.textMuted) {
-                    showDateMenu = true
-                }
-                .help("Repeats \(task.repeatRule.label.lowercased())")
+                trailingIcon("arrow.2.squarepath", size: 12, weight: .semibold, color: theme.textMuted, action: onOpenDateMenu)
+                    .help("Repeats \(task.repeatRule.label.lowercased())")
             }
 
-            // Date: chip when idle + dated + non-redundant; calendar icon on hover.
-            if hovering {
-                trailingIcon("calendar", size: 13, weight: .regular, color: theme.textGhost) { showDateMenu = true }
-            } else if showDateLabel, let label = task.dueLabel() {
+            // Date: keep the day chip visible for dated rows (even while hovering, so
+            // "Thu"/"6 Jul" never disappears). Undated rows get a calendar icon on
+            // hover to add a date.
+            if showDateLabel, let label = task.dueLabel() {
                 dateChip(label)
+            } else if active {
+                trailingIcon("calendar", size: 13, weight: .regular, color: theme.textGhost, action: onOpenDateMenu)
             }
 
             // Flag: solid red when flagged; faint outline on hover.
             if task.pri {
                 trailingIcon("flag.fill", size: 12, weight: .regular, color: theme.accentRed) { onFlag() }
-            } else if hovering {
+            } else if active {
                 trailingIcon("flag", size: 12, weight: .regular, color: theme.textGhost) { onFlag() }
             }
 
             // Delete — hover only.
-            if hovering {
+            if active {
                 trailingIcon("xmark", size: 11, weight: .semibold, color: theme.textGhost) { onDelete() }
                     .help("Delete task")
             }
         }
-        .popover(isPresented: $showDateMenu, arrowEdge: .bottom) {
-            TaskDateMenuCard(
-                task: task,
-                onSetDate: { onSetDate($0); showDateMenu = false },
-                onRepeat: { onRepeat($0) },
-                onPickDate: {
-                    showDateMenu = false
-                    pickedDate = task.due ?? Date()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { showDatePicker = true }
-                }
-            )
-        }
-        .popover(isPresented: $showDatePicker, arrowEdge: .bottom) {
-            DatePickerCard(date: $pickedDate) { onSetDate($0); showDatePicker = false }
-        }
+        // Report the trailing frame so the anchored date/repeat card (rendered at the
+        // container level, like the + / … menus) can position itself under it.
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: TaskMenuAnchorKey.self,
+                    value: [task.id: geo.frame(in: .named("vaultContainer"))]
+                )
+            }
+        )
     }
 
     private func trailingIcon(_ name: String, size: CGFloat, weight: Font.Weight, color: Color, action: @escaping () -> Void) -> some View {
@@ -411,7 +399,7 @@ private struct TaskRow: View {
 
     private func dateChip(_ label: String) -> some View {
         let overdue = task.isOverdue()
-        return Button(action: { showDateMenu = true }) {
+        return Button(action: onOpenDateMenu) {
             HStack(spacing: 4) {
                 Image(systemName: "calendar").font(.system(size: 9))
                 Text(label).font(.mono(10, weight: .medium))
@@ -441,7 +429,7 @@ private struct TaskRow: View {
 
 // MARK: - Per-task date / repeat card (matches the designer mockup)
 
-private struct TaskDateMenuCard: View {
+struct TaskDateMenuCard: View {
     let task: TodoTask
     let onSetDate: (Date?) -> Void
     let onRepeat: (TaskRepeat) -> Void
@@ -481,9 +469,12 @@ private struct TaskDateMenuCard: View {
                 TodoMenuRow(label: rule.label, checked: task.repeatRule == rule) { onRepeat(rule) }
             }
         }
-        .padding(6)
-        .frame(width: 236)
-        .background(theme.dropBg)
+        .padding(5)
+        .frame(width: 240)
+        .background(theme.ddBg)
+        .cornerRadius(11)
+        .overlay(RoundedRectangle(cornerRadius: 11).stroke(theme.ddBorder, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.28), radius: 18, x: 0, y: 10)
     }
 
     private var divider: some View {
@@ -497,7 +488,7 @@ private struct TaskDateMenuCard: View {
     }
 }
 
-private struct TodoMenuRow: View {
+struct TodoMenuRow: View {
     var icon: String? = nil
     var label: String
     var trailing: String? = nil
@@ -551,7 +542,7 @@ private struct TodoMenuRow: View {
 
 // MARK: - Styled graphical date picker (shared by task rows + scope filter)
 
-private struct DatePickerCard: View {
+struct DatePickerCard: View {
     @Binding var date: Date
     let onSet: (Date) -> Void
     @Environment(\.theme) var theme
@@ -588,7 +579,22 @@ private struct DatePickerCard: View {
         }
         .padding(16)
         .frame(width: 286)
-        .background(theme.dropBg)
+        .background(theme.ddBg)
+        .cornerRadius(11)
+        .overlay(RoundedRectangle(cornerRadius: 11).stroke(theme.ddBorder, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.28), radius: 18, x: 0, y: 10)
         .environment(\.font, .ui(13))
+    }
+}
+
+// MARK: - Anchor key for the per-task date/repeat dropdown
+
+/// Reports each task row's trailing frame (in "vaultContainer" space) so the
+/// container can anchor the date/repeat card beneath it — the same mechanism the
+/// + / … / scope menus use, so the dropdown matches the rest of the app.
+struct TaskMenuAnchorKey: PreferenceKey {
+    static var defaultValue: [UUID: CGRect] = [:]
+    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+        value.merge(nextValue()) { _, new in new }
     }
 }

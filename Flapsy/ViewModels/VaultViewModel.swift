@@ -117,8 +117,12 @@ final class VaultViewModel: ObservableObject {
     @Published var todoFlagOnly: Bool = false
     @Published var todoScope: TaskDateScope = .anytime
     @Published var newTaskText: String = ""
-    /// Set true to present the To-Do date-scope "Pick a date…" popover.
+    /// Set true to present the To-Do date-scope "Pick a date…" picker.
     @Published var showTodoScopeDatePicker: Bool = false
+    /// The task whose date/repeat dropdown is open (anchored app card), if any.
+    @Published var openTaskDateMenu: UUID? = nil
+    /// The task whose "Pick a date…" calendar is open, if any.
+    @Published var openTaskDatePicker: UUID? = nil
 
     // MARK: - Notes (standalone Notes mini-app)
     @Published var notes: [Note] = []

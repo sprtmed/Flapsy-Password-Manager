@@ -68,6 +68,8 @@ struct VaultContainerView: View {
     @Environment(\.theme) var theme
 
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
+    @State private var taskAnchors: [UUID: CGRect] = [:]
+    @State private var taskPickerDate = Date()
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -125,15 +127,89 @@ struct VaultContainerView: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
                 }
             }
+
+            // Per-task date / repeat dropdown — same anchored card system as the
+            // header menus (no system popover chrome).
+            if let id = vault.openTaskDateMenu, let task = vault.tasks.first(where: { $0.id == id }) {
+                dropdownDimmer { vault.openTaskDateMenu = nil }
+                GeometryReader { geo in
+                    anchoredCard(taskAnchors[id] ?? .zero, width: 240, estHeight: 392, in: geo) {
+                        TaskDateMenuCard(
+                            task: task,
+                            onSetDate: { vault.setTaskDue(id, $0); vault.openTaskDateMenu = nil },
+                            onRepeat: { vault.setTaskRepeat(id, $0) },
+                            onPickDate: {
+                                taskPickerDate = task.due ?? Date()
+                                vault.openTaskDateMenu = nil
+                                vault.openTaskDatePicker = id
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Per-task "Pick a date…" calendar — anchored card.
+            if let id = vault.openTaskDatePicker, vault.tasks.contains(where: { $0.id == id }) {
+                dropdownDimmer { vault.openTaskDatePicker = nil }
+                GeometryReader { geo in
+                    anchoredCard(taskAnchors[id] ?? .zero, width: 286, estHeight: 340, in: geo) {
+                        DatePickerCard(date: $taskPickerDate) {
+                            vault.setTaskDue(id, $0)
+                            vault.openTaskDatePicker = nil
+                        }
+                    }
+                }
+            }
+
+            // Date-scope "Pick a date…" calendar — anchored under the scope chip.
+            if vault.showTodoScopeDatePicker {
+                dropdownDimmer { vault.showTodoScopeDatePicker = false }
+                GeometryReader { geo in
+                    anchoredCard(menuAnchors[.todoScope] ?? .zero, width: 286, estHeight: 340, in: geo) {
+                        DatePickerCard(date: $taskPickerDate) {
+                            vault.todoScope = .pick($0)
+                            vault.showTodoScopeDatePicker = false
+                        }
+                    }
+                }
+            }
         }
         .coordinateSpace(name: "vaultContainer")
         .onPreferenceChange(HeaderMenuAnchorKey.self) { menuAnchors = $0 }
+        .onPreferenceChange(TaskMenuAnchorKey.self) { taskAnchors = $0 }
         .ignoresSafeArea(.container, edges: .top)
         .animation(.spring(response: 0.32, dampingFraction: 0.9), value: vault.selectedItemID)
         .onChange(of: vault.currentPanel) { _ in
             vault.showExpandedNote = false
             vault.openHeaderMenu = nil
+            vault.openTaskDateMenu = nil
+            vault.openTaskDatePicker = nil
         }
+        .animation(.easeOut(duration: 0.12), value: vault.openTaskDateMenu)
+        .animation(.easeOut(duration: 0.12), value: vault.openTaskDatePicker)
+        .animation(.easeOut(duration: 0.12), value: vault.showTodoScopeDatePicker)
+    }
+
+    /// Full-bleed transparent layer that dismisses an open dropdown on outside tap.
+    private func dropdownDimmer(_ dismiss: @escaping () -> Void) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .ignoresSafeArea()
+            .onTapGesture { withAnimation(.easeOut(duration: 0.1)) { dismiss() } }
+    }
+
+    /// Positions a card beneath an anchor (right-aligned), flipping above it when it
+    /// would overflow the bottom. Mirrors the header-menu placement.
+    private func anchoredCard<C: View>(_ anchor: CGRect, width: CGFloat, estHeight: CGFloat,
+                                       in geo: GeometryProxy, @ViewBuilder content: () -> C) -> some View {
+        let x = min(max(8, anchor.maxX - width), max(8, geo.size.width - width - 8))
+        let below = anchor.maxY + 4
+        let flipUp = below + estHeight > geo.size.height - 8 && anchor.minY - estHeight - 4 > 8
+        let y = max(8, flipUp ? anchor.minY - estHeight - 4 : below)
+        return content()
+            .frame(width: width)
+            .offset(x: x, y: y)
+            .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: flipUp ? .bottom : .top)))
     }
 
     /// Reports a header button's frame (in the container's coordinate space) so a
