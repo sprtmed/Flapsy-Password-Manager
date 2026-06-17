@@ -32,6 +32,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var defaultSortOption: SortOption = .newestFirst
     @Published var showNotesInTopBar: Bool = false
     @Published var showTodoInTopBar: Bool = false
+    @Published var requireAuthToEdit: Bool = false
     @Published var lastBackupDate: Date? = nil
 
     // Runtime-only: current pin state for this session (not persisted)
@@ -76,6 +77,7 @@ final class SettingsViewModel: ObservableObject {
         defaultSortOption = SortOption(rawValue: settings.defaultSortOption) ?? .newestFirst
         showNotesInTopBar = settings.showNotesInTopBar
         showTodoInTopBar = settings.showTodoInTopBar
+        requireAuthToEdit = settings.requireAuthToEdit
         lastBackupDate = settings.lastBackupDate
     }
 
@@ -100,6 +102,7 @@ final class SettingsViewModel: ObservableObject {
         defaultSortOption = .newestFirst
         showNotesInTopBar = false
         showTodoInTopBar = false
+        requireAuthToEdit = false
         // lastBackupDate intentionally not reset
     }
 
@@ -124,6 +127,7 @@ final class SettingsViewModel: ObservableObject {
             defaultSortOption: defaultSortOption.rawValue,
             showNotesInTopBar: showNotesInTopBar,
             showTodoInTopBar: showTodoInTopBar,
+            requireAuthToEdit: requireAuthToEdit,
             lastBackupDate: lastBackupDate
         )
     }

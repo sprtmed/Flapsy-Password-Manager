@@ -1477,6 +1477,12 @@ final class VaultViewModel: ObservableObject {
     // MARK: - Edit Re-authentication
 
     func requestEditWithReauth(_ item: VaultItem) {
+        // Re-auth on edit is opt-in (Settings → "Require authentication to edit").
+        guard settingsViewModel?.requireAuthToEdit == true else {
+            startEditing(item)
+            return
+        }
+
         // Non-login items or logins without passwords don't need re-auth
         guard item.type == .login, let pw = item.password, !pw.isEmpty else {
             startEditing(item)

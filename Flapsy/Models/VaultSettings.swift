@@ -35,6 +35,8 @@ struct VaultSettings: Codable {
     /// Show Notes / To-Do as their own icon in the top nav (vs. under the … menu).
     var showNotesInTopBar: Bool
     var showTodoInTopBar: Bool
+    /// Require Touch ID / master password before editing a login. Default off.
+    var requireAuthToEdit: Bool
     var lastBackupDate: Date?
 
     static var defaults: VaultSettings {
@@ -57,7 +59,8 @@ struct VaultSettings: Codable {
             alwaysExpandNotes: false,
             defaultSortOption: "Newest",
             showNotesInTopBar: false,
-            showTodoInTopBar: false
+            showTodoInTopBar: false,
+            requireAuthToEdit: false
         )
     }
 
@@ -83,6 +86,7 @@ struct VaultSettings: Codable {
         defaultSortOption = try container.decodeIfPresent(String.self, forKey: .defaultSortOption) ?? "Newest"
         showNotesInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showNotesInTopBar) ?? false
         showTodoInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showTodoInTopBar) ?? false
+        requireAuthToEdit = try container.decodeIfPresent(Bool.self, forKey: .requireAuthToEdit) ?? false
         lastBackupDate = try container.decodeIfPresent(Date.self, forKey: .lastBackupDate)
     }
 
@@ -100,6 +104,7 @@ struct VaultSettings: Codable {
          defaultSortOption: String = "Newest",
          showNotesInTopBar: Bool = false,
          showTodoInTopBar: Bool = false,
+         requireAuthToEdit: Bool = false,
          lastBackupDate: Date? = nil) {
         self.menuBarIcon = menuBarIcon
         self.menuBarShowLabel = menuBarShowLabel
@@ -120,6 +125,7 @@ struct VaultSettings: Codable {
         self.defaultSortOption = defaultSortOption
         self.showNotesInTopBar = showNotesInTopBar
         self.showTodoInTopBar = showTodoInTopBar
+        self.requireAuthToEdit = requireAuthToEdit
         self.lastBackupDate = lastBackupDate
     }
 }

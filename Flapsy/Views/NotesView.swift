@@ -317,6 +317,7 @@ private struct NoteEditorView: View {
     @StateObject private var controller = RichTextController()
     @State private var showInNoteSearch = false
     @State private var inNoteQuery = ""
+    @State private var showTagMenu = false
     @FocusState private var inNoteSearchFocused: Bool
 
     private var note: Note? { vault.notes.first(where: { $0.id == noteID }) }
@@ -449,16 +450,7 @@ private struct NoteEditorView: View {
 
     private var tagMenu: some View {
         let current = note?.tag.flatMap { vault.noteTagFor(key: $0) }
-        return Menu {
-            Button(action: { vault.setNoteTag(noteID, tag: nil) }) {
-                if note?.tag == nil { Label("None", systemImage: "checkmark") } else { Text("None") }
-            }
-            ForEach(vault.noteTags) { tag in
-                Button(action: { vault.setNoteTag(noteID, tag: tag.key) }) {
-                    if note?.tag == tag.key { Label(tag.label, systemImage: "checkmark") } else { Text(tag.label) }
-                }
-            }
-        } label: {
+        return Button(action: { showTagMenu.toggle() }) {
             HStack(spacing: 4) {
                 if let current = current {
                     Circle().fill(Color(hex: current.color)).frame(width: 7, height: 7)
@@ -474,11 +466,28 @@ private struct NoteEditorView: View {
             .padding(.vertical, 4)
             .background(theme.fieldBg)
             .cornerRadius(6)
+            .fixedSize()
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
+        .buttonStyle(.hand)
         .help("Tag this note")
+        // Themed dropdown (the native Menu rendered in the system appearance, so it
+        // showed black text in dark mode and had no color dots).
+        .popover(isPresented: $showTagMenu, arrowEdge: .bottom) {
+            VStack(spacing: 1) {
+                NoteTagRow(label: "None", color: nil, selected: note?.tag == nil) {
+                    vault.setNoteTag(noteID, tag: nil); showTagMenu = false
+                }
+                ForEach(vault.noteTags) { tag in
+                    NoteTagRow(label: tag.label, color: Color(hex: tag.color),
+                               selected: note?.tag == tag.key) {
+                        vault.setNoteTag(noteID, tag: tag.key); showTagMenu = false
+                    }
+                }
+            }
+            .padding(6)
+            .frame(width: 190)
+            .background(theme.ddBg)
+        }
     }
 
     private var inNoteSearchBar: some View {
@@ -669,6 +678,8 @@ final class RichTextController: ObservableObject {
 final class FormattingTextView: NSTextView {
     var onBold: (() -> Void)?
     var onItalic: (() -> Void)?
+    /// Text color forced on pasted content so it stays readable in the current theme.
+    var defaultTextColor: NSColor = .labelColor
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if event.modifierFlags.contains(.command),
@@ -677,6 +688,46 @@ final class FormattingTextView: NSTextView {
             if chars == "i" { onItalic?(); return true }
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    /// Normalize pasted rich text to the editor's single style: keep bold/italic and
+    /// links, but force our theme text color (source color is often black, which is
+    /// invisible in dark mode) and the default font, and drop background colors.
+    override func paste(_ sender: Any?) {
+        let pb = NSPasteboard.general
+        let pasted: NSMutableAttributedString?
+        if let d = pb.data(forType: .rtf) {
+            pasted = NSMutableAttributedString(rtf: d, documentAttributes: nil)
+        } else if let d = pb.data(forType: .rtfd) {
+            pasted = NSMutableAttributedString(rtfd: d, documentAttributes: nil)
+        } else {
+            pasted = nil
+        }
+
+        guard let attr = pasted, attr.length > 0 else {
+            // Plain text (or unknown) — paste with the editor's typing attributes,
+            // which already carry the correct color.
+            super.pasteAsPlainText(sender)
+            return
+        }
+
+        let base = NSFont.systemFont(ofSize: 14)
+        let full = NSRange(location: 0, length: attr.length)
+        attr.enumerateAttribute(.font, in: full) { value, range, _ in
+            let traits = (value as? NSFont).map { NSFontManager.shared.traits(of: $0) } ?? []
+            var f = base
+            if traits.contains(.boldFontMask) { f = NSFontManager.shared.convert(f, toHaveTrait: .boldFontMask) }
+            if traits.contains(.italicFontMask) { f = NSFontManager.shared.convert(f, toHaveTrait: .italicFontMask) }
+            attr.addAttribute(.font, value: f, range: range)
+        }
+        attr.addAttribute(.foregroundColor, value: defaultTextColor, range: full)
+        attr.removeAttribute(.backgroundColor, range: full)
+
+        let range = selectedRange()
+        guard shouldChangeText(in: range, replacementString: attr.string) else { return }
+        textStorage?.replaceCharacters(in: range, with: attr)
+        didChangeText()
+        setSelectedRange(NSRange(location: range.location + attr.length, length: 0))
     }
 }
 
@@ -707,6 +758,7 @@ struct RichTextEditor: NSViewRepresentable {
         textView.drawsBackground = false
         textView.backgroundColor = .clear
         textView.insertionPointColor = textColor
+        textView.defaultTextColor = textColor
         textView.linkTextAttributes = [
             .foregroundColor: linkColor,
             .underlineStyle: NSUnderlineStyle.single.rawValue,
@@ -743,6 +795,7 @@ struct RichTextEditor: NSViewRepresentable {
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? FormattingTextView else { return }
         textView.insertionPointColor = textColor
+        textView.defaultTextColor = textColor
         textView.linkTextAttributes = [
             .foregroundColor: linkColor,
             .underlineStyle: NSUnderlineStyle.single.rawValue,
@@ -807,5 +860,48 @@ struct RichTextEditor: NSViewRepresentable {
             ) ?? Data()
             parent.onChange(rtf, storage.string)
         }
+    }
+}
+
+// MARK: - Note tag dropdown row
+
+/// A themed row in the note tag dropdown: colored dot + label + checkmark when
+/// selected. Replaces the native menu so it follows the app theme in dark mode.
+private struct NoteTagRow: View {
+    let label: String
+    let color: Color?
+    let selected: Bool
+    let action: () -> Void
+
+    @Environment(\.theme) var theme
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                if let color = color {
+                    Circle().fill(color).frame(width: 9, height: 9)
+                } else {
+                    Circle().strokeBorder(theme.textGhost, lineWidth: 1.2).frame(width: 9, height: 9)
+                }
+                Text(label)
+                    .font(.ui(12.5, weight: selected ? .semibold : .regular))
+                    .foregroundColor(theme.text)
+                Spacer(minLength: 8)
+                if selected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(theme.accentBlue)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .background(hovering ? theme.hoverBg : Color.clear)
+            .cornerRadius(7)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }

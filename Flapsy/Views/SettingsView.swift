@@ -11,21 +11,47 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                launchAtLoginSection
-                themeToggle
-                keepWindowOpenSection
-                menuBarIconPicker
-                autoLockSection
-                touchIDSection
-                clipboardSection
-                openURLCopySection
-                favoritesDefaultSection
-                defaultSortSection
-                expandNotesSection
-                topNavSection
-                deleteConfirmSection
-                updateCheckSection
-                breachCheckSection
+                settingsGroup("Appearance") {
+                    themeToggle
+                    rowDivider
+                    menuBarIconPicker
+                    rowDivider
+                    topNavSection
+                }
+
+                settingsGroup("General") {
+                    launchAtLoginSection
+                    rowDivider
+                    keepWindowOpenSection
+                    rowDivider
+                    updateCheckSection
+                }
+
+                settingsGroup("Security & Privacy") {
+                    autoLockSection
+                    rowDivider
+                    touchIDSection
+                    rowDivider
+                    requireAuthToEditSection
+                    rowDivider
+                    clipboardSection
+                    rowDivider
+                    breachCheckSection
+                    rowDivider
+                    deleteConfirmSection
+                }
+
+                settingsGroup("Vault") {
+                    openURLCopySection
+                    rowDivider
+                    favoritesDefaultSection
+                    rowDivider
+                    defaultSortSection
+                    rowDivider
+                    expandNotesSection
+                }
+
+                // Everything below is intentionally left ungrouped / unchanged.
                 secretKeySection
                 changePasswordSection
                 backupReminder
@@ -37,6 +63,36 @@ struct SettingsView: View {
             .padding(16)
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    // MARK: - Grouped card container
+
+    /// A titled card grouping related settings rows (rows separated by `rowDivider`).
+    private func settingsGroup<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title.uppercased())
+                .font(.ui(10.5, weight: .bold))
+                .tracking(0.7)
+                .foregroundColor(theme.textFaint)
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                content()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 2)
+            .background(theme.cardBg)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(theme.cardBorder, lineWidth: 1)
+            )
+        }
+    }
+
+    /// Hairline divider between rows inside a settings card.
+    private var rowDivider: some View {
+        Divider().overlay(theme.cardBorder)
     }
 
     // MARK: - Launch at Login
@@ -229,6 +285,30 @@ struct SettingsView: View {
                     .foregroundColor(theme.textFaint)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+    }
+
+    // MARK: - Require Auth to Edit
+
+    private var requireAuthToEditSection: some View {
+        VStack(spacing: 4) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.shield")
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.accentBlueLt)
+                    Text("Require authentication to edit")
+                        .font(.ui(13))
+                        .foregroundColor(theme.text)
+                }
+                Spacer()
+                FlapsyToggle(isOn: $settings.requireAuthToEdit)
+            }
+            .padding(.vertical, 4)
+            Text("Ask for Touch ID or your master password before editing a login. Off by default.")
+                .font(.ui(10))
+                .foregroundColor(theme.textFaint)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
