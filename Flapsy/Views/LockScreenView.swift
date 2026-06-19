@@ -14,239 +14,301 @@ struct LockScreenView: View {
             KeychainService.biometricEnabledFlag
     }
 
+    /// Monospace security chip with a glowing accent dot (AES-256 / Argon2id).
+    private func securityChip(_ text: String) -> some View {
+        HStack(spacing: 7) {
+            Circle()
+                .fill(theme.accentBlue)
+                .frame(width: 6, height: 6)
+                .shadow(color: theme.accentBlue.opacity(0.7), radius: 4)
+            Text(text)
+                .font(.mono(11))
+                .foregroundColor(theme.textMuted)
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 9)
+                .fill(Color.white.opacity(0.02))
+                .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(theme.cardBorder, lineWidth: 1))
+        )
+    }
+
+    /// Branded purple gradient used by the lock badge + submit button.
+    private var accentGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(hex: "9a8dff"), Color(hex: "5b49d6")],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    }
+
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer().frame(height: 40)
+        ZStack {
+            // Base background + ambient aurora glow behind the lock badge.
+            theme.bg.ignoresSafeArea()
+            Ellipse()
+                .fill(theme.accentBlue.opacity(0.30))
+                .frame(width: 360, height: 300)
+                .blur(radius: 80)
+                .offset(y: -190)
+                .allowsHitTesting(false)
 
-            // Lock icon with blue gradient
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            colors: [theme.accentBlue, Color(hex: "8a6bea")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 64, height: 64)
-                    .shadow(color: theme.accentBlue.opacity(0.3), radius: 16, y: 8)
+            VStack(spacing: 0) {
+                VStack(spacing: 18) {
+                    Spacer().frame(height: 26)
 
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(.white)
-            }
-
-            // Title
-            VStack(spacing: 6) {
-                Text("Flapsy")
-                    .font(.ui(18, weight: .bold))
-                    .foregroundColor(theme.text)
-                Text("Enter master password to unlock")
-                    .font(.ui(12))
-                    .foregroundColor(theme.textSecondary)
-            }
-
-            // Touch ID (above the password field)
-            if biometricAvailableAndEnabled && !vault.needsSecretKeyRecovery {
-                Button(action: { vault.attemptBiometricUnlock() }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "touchid")
-                            .font(.system(size: 20))
-                        Text("Unlock with Touch ID")
-                            .font(.ui(13, weight: .medium))
+                    // Lock badge in a glowing well
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 22)
+                            .fill(accentGradient)
+                            .frame(width: 76, height: 76)
+                            .shadow(color: Color(hex: "5b49d6").opacity(0.65), radius: 22, y: 8)
+                            .shadow(color: theme.accentBlue.opacity(0.55), radius: 48)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 22)
+                                    .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                            )
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 30, weight: .medium))
+                            .foregroundColor(.white)
                     }
-                    .foregroundColor(theme.accentBlueLt)
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(.hand)
-                .disabled(vault.showBiometricPrompt)
 
-                // Divider
-                HStack(spacing: 10) {
-                    Rectangle().fill(theme.cardBorder).frame(height: 1)
-                    Text("or enter master password")
-                        .font(.ui(11))
-                        .foregroundColor(theme.textMuted)
-                        .fixedSize()
-                    Rectangle().fill(theme.cardBorder).frame(height: 1)
-                }
-                .padding(.horizontal, 32)
-            }
+                    // Title
+                    VStack(spacing: 6) {
+                        Text("Flapsy")
+                            .font(.ui(29, weight: .bold))
+                            .foregroundColor(theme.text)
+                        Text("Enter master password to unlock")
+                            .font(.ui(14))
+                            .foregroundColor(theme.textSecondary)
+                    }
 
-            // Password input with inline arrow-submit button
-            HStack(spacing: 6) {
-                ZStack(alignment: .leading) {
-                    if vault.masterPasswordInput.isEmpty {
-                        Text("Master password")
-                            .font(.ui(15))
-                            .foregroundColor(theme.textFaint)
-                    }
-                    SecureField("", text: $vault.masterPasswordInput)
-                        .textFieldStyle(.plain)
-                        .font(.ui(15))
-                        .foregroundColor(theme.text)
-                        .focused($isPasswordFocused)
-                }
-                Button(action: {
-                    if vault.needsSecretKeyRecovery {
-                        vault.unlockWithRecoveredSecretKey()
-                    } else {
-                        vault.unlock()
-                    }
-                }) {
-                    Group {
-                        if vault.isLoading {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                                .progressViewStyle(.circular)
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 15, weight: .semibold))
+                    // Touch ID (above the password field)
+                    if biometricAvailableAndEnabled && !vault.needsSecretKeyRecovery {
+                        Button(action: { vault.attemptBiometricUnlock() }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "touchid")
+                                    .font(.system(size: 22))
+                                Text("Unlock with Touch ID")
+                                    .font(.ui(15, weight: .semibold))
+                            }
+                            .foregroundColor(theme.accentBlueLt)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [theme.accentBlue.opacity(0.16), theme.accentBlue.opacity(0.06)],
+                                            startPoint: .top, endPoint: .bottom
+                                        )
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .strokeBorder(theme.accentBlue.opacity(0.32), lineWidth: 1)
+                                    )
+                            )
                         }
+                        .buttonStyle(.hand)
+                        .disabled(vault.showBiometricPrompt)
+                        .padding(.top, 6)
+
+                        // Divider
+                        HStack(spacing: 14) {
+                            Rectangle()
+                                .fill(LinearGradient(colors: [.clear, theme.cardBorder, .clear], startPoint: .leading, endPoint: .trailing))
+                                .frame(height: 1)
+                            Text("or enter master password")
+                                .font(.ui(12.5, weight: .medium))
+                                .foregroundColor(theme.textFaint)
+                                .fixedSize()
+                            Rectangle()
+                                .fill(LinearGradient(colors: [.clear, theme.cardBorder, .clear], startPoint: .leading, endPoint: .trailing))
+                                .frame(height: 1)
+                        }
+                        .padding(.top, 2)
                     }
-                    .foregroundColor(.white)
-                    .frame(width: 38, height: 38)
-                    .background(theme.accentBlue)
-                    .cornerRadius(9)
-                }
-                .buttonStyle(.hand)
-                .keyboardShortcut(.defaultAction)
-                .disabled(vault.isLoading || vault.isLockedOut || vault.masterPasswordInput.isEmpty)
-            }
-            .padding(.leading, 14)
-            .padding(.trailing, 5)
-            .padding(.vertical, 5)
-            .background(theme.inputBg)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(vault.lockError ? theme.accentRed : theme.inputBorder, lineWidth: 1)
-            )
-            .modifier(ShakeModifier(shakes: vault.shakeError ? 3 : 0))
-            .padding(.horizontal, 32)
 
-            // Error message
-            if vault.lockError {
-                Text("\u{2715} \(vault.lockErrorMessage)")
-                    .font(.ui(11))
-                    .foregroundColor(theme.accentRed)
-            }
+                    // Password input with inline arrow-submit button
+                    HStack(spacing: 7) {
+                        ZStack(alignment: .leading) {
+                            if vault.masterPasswordInput.isEmpty {
+                                Text("Master password")
+                                    .font(.ui(15))
+                                    .foregroundColor(theme.textFaint)
+                            }
+                            SecureField("", text: $vault.masterPasswordInput)
+                                .textFieldStyle(.plain)
+                                .font(.ui(15))
+                                .foregroundColor(theme.text)
+                                .focused($isPasswordFocused)
+                        }
+                        Button(action: {
+                            if vault.needsSecretKeyRecovery {
+                                vault.unlockWithRecoveredSecretKey()
+                            } else {
+                                vault.unlock()
+                            }
+                        }) {
+                            Group {
+                                if vault.isLoading {
+                                    ProgressView()
+                                        .scaleEffect(0.6)
+                                        .progressViewStyle(.circular)
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "arrow.right")
+                                        .font(.system(size: 17, weight: .semibold))
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(RoundedRectangle(cornerRadius: 11).fill(accentGradient))
+                            .shadow(color: Color(hex: "5b49d6").opacity(0.55), radius: 10, y: 3)
+                        }
+                        .buttonStyle(.hand)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(vault.isLoading || vault.isLockedOut || vault.masterPasswordInput.isEmpty)
+                    }
+                    .padding(.leading, 18)
+                    .padding(.trailing, 6)
+                    .padding(.vertical, 6)
+                    .background(theme.inputBg)
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(vault.lockError ? theme.accentRed : theme.inputBorder, lineWidth: 1)
+                    )
+                    .modifier(ShakeModifier(shakes: vault.shakeError ? 3 : 0))
 
-            // Lockout countdown
-            if vault.isLockedOut {
-                Text("Wait \(vault.lockoutRemainingSeconds)s before trying again")
-                    .font(.ui(11, weight: .medium))
-                    .foregroundColor(theme.accentRed.opacity(0.8))
-            }
-
-            // Biometric failed message
-            if vault.biometricFailed {
-                Text("Touch ID failed \u{2014} enter your password")
-                    .font(.ui(11))
-                    .foregroundColor(theme.textMuted)
-            }
-
-            // Secret Key recovery input (shown when Keychain lost for v2 vault)
-            if vault.needsSecretKeyRecovery {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("SECRET KEY")
-                        .font(.ui(10, weight: .semibold))
-                        .foregroundColor(theme.textFaint)
-
-                    TextField("XXXXX-XXXXX-XXXXX-XXXXX-XXXXX", text: $vault.secretKeyRecoveryInput)
-                        .textFieldStyle(.plain)
-                        .font(.ui(12))
-                        .padding(10)
-                        .background(theme.inputBg)
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(
-                                    vault.secretKeyRecoveryError.isEmpty ? theme.inputBorder : theme.accentRed,
-                                    lineWidth: 1
-                                )
-                        )
-                        .foregroundColor(theme.text)
-
-                    if !vault.secretKeyRecoveryError.isEmpty {
-                        Text(vault.secretKeyRecoveryError)
-                            .font(.ui(10))
+                    // Error message
+                    if vault.lockError {
+                        Text("\u{2715} \(vault.lockErrorMessage)")
+                            .font(.ui(11))
                             .foregroundColor(theme.accentRed)
                     }
 
-                    Text("Enter the Secret Key from your Emergency Kit")
-                        .font(.ui(10))
-                        .foregroundColor(theme.textMuted)
+                    // Lockout countdown
+                    if vault.isLockedOut {
+                        Text("Wait \(vault.lockoutRemainingSeconds)s before trying again")
+                            .font(.ui(11, weight: .medium))
+                            .foregroundColor(theme.accentRed.opacity(0.8))
+                    }
+
+                    // Biometric failed message
+                    if vault.biometricFailed {
+                        Text("Touch ID failed \u{2014} enter your password")
+                            .font(.ui(11))
+                            .foregroundColor(theme.textMuted)
+                    }
+
+                    // Secret Key recovery input (shown when Keychain lost for v2 vault)
+                    if vault.needsSecretKeyRecovery {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("SECRET KEY")
+                                .font(.ui(10, weight: .semibold))
+                                .foregroundColor(theme.textFaint)
+
+                            TextField("XXXXX-XXXXX-XXXXX-XXXXX-XXXXX", text: $vault.secretKeyRecoveryInput)
+                                .textFieldStyle(.plain)
+                                .font(.ui(12))
+                                .padding(10)
+                                .background(theme.inputBg)
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(
+                                            vault.secretKeyRecoveryError.isEmpty ? theme.inputBorder : theme.accentRed,
+                                            lineWidth: 1
+                                        )
+                                )
+                                .foregroundColor(theme.text)
+
+                            if !vault.secretKeyRecoveryError.isEmpty {
+                                Text(vault.secretKeyRecoveryError)
+                                    .font(.ui(10))
+                                    .foregroundColor(theme.accentRed)
+                            }
+
+                            Text("Enter the Secret Key from your Emergency Kit")
+                                .font(.ui(10))
+                                .foregroundColor(theme.textMuted)
+                        }
+                    }
+
+                    // Security chips
+                    HStack(spacing: 10) {
+                        securityChip("AES-256")
+                        securityChip("Argon2id")
+                    }
+                    .padding(.top, 6)
+
+                    // Version info
+                    if updateCheck.updateAvailable, let version = updateCheck.latestVersion {
+                        Button(action: {
+                            if let url = URL(string: "https://github.com/sprtmed/Flapsy-Password-Manager/releases/latest") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.down.circle")
+                                    .font(.system(size: 9))
+                                Text("v\(version) available")
+                                    .font(.mono(11))
+                            }
+                            .foregroundColor(theme.accentBlueLt)
+                        }
+                        .buttonStyle(.hand)
+                    } else {
+                        Text("v\(updateCheck.currentVersion)")
+                            .font(.mono(11))
+                            .foregroundColor(theme.textFaint)
+                    }
                 }
                 .padding(.horizontal, 32)
-            }
 
-            // Security badges
-            HStack(spacing: 16) {
-                Label("AES-256", systemImage: "diamond.fill")
-                    .font(.ui(10))
-                    .foregroundColor(theme.textGhost)
-                Label("Argon2id", systemImage: "diamond.fill")
-                    .font(.ui(10))
-                    .foregroundColor(theme.textGhost)
-            }
+                Spacer(minLength: 20)
 
-            // Version info
-            if updateCheck.updateAvailable, let version = updateCheck.latestVersion {
-                Button(action: {
-                    if let url = URL(string: "https://github.com/sprtmed/Flapsy-Password-Manager/releases/latest") {
-                        NSWorkspace.shared.open(url)
+                // Footer pinned to bottom (full-width with a top hairline)
+                HStack {
+                    Button(action: {
+                        vault.showStartFreshConfirmation = true
+                    }) {
+                        HStack(spacing: 7) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Start Fresh")
+                                .font(.ui(13, weight: .medium))
+                        }
+                        .foregroundColor(theme.textFaint)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
                     }
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.down.circle")
-                            .font(.system(size: 9))
-                        Text("v\(version) available")
-                            .font(.ui(10))
+                    .buttonStyle(.hand)
+
+                    Spacer()
+
+                    Button(action: { NSApplication.shared.terminate(nil) }) {
+                        HStack(spacing: 7) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Quit Application")
+                                .font(.ui(13, weight: .medium))
+                        }
+                        .foregroundColor(theme.textFaint)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
                     }
-                    .foregroundColor(theme.accentBlueLt)
+                    .buttonStyle(.hand)
                 }
-                .buttonStyle(.hand)
-            } else {
-                Text("v\(updateCheck.currentVersion)")
-                    .font(.ui(10))
-                    .foregroundColor(theme.textGhost)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 14)
+                .background(
+                    theme.bg.opacity(0.4)
+                        .overlay(theme.cardBorder.frame(height: 1), alignment: .top)
+                )
             }
-
-            Spacer()
-
-            // Quit + Start Fresh
-            HStack {
-                Button(action: {
-                    vault.showStartFreshConfirmation = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 8, weight: .semibold))
-                        Text("Start Fresh")
-                            .font(.ui(9))
-                    }
-                    .foregroundColor(theme.textGhost)
-                }
-                .buttonStyle(.hand)
-
-                Spacer()
-
-                Button(action: { NSApplication.shared.terminate(nil) }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 8, weight: .semibold))
-                        Text("Quit Application")
-                            .font(.ui(9))
-                    }
-                    .foregroundColor(theme.textGhost)
-                }
-                .buttonStyle(.hand)
-            }
-            .padding(.bottom, 16)
         }
-        .padding(.horizontal, 32)
         .overlay {
             if vault.showStartFreshConfirmation {
                 ZStack {
