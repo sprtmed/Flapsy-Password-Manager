@@ -35,6 +35,7 @@ struct VaultSettings: Codable {
     /// Show Notes / To-Do as their own icon in the top nav (vs. under the … menu).
     var showNotesInTopBar: Bool
     var showTodoInTopBar: Bool
+    var showPomodoroInTopBar: Bool
     /// Require Touch ID / master password before editing a login. Default off.
     var requireAuthToEdit: Bool
     var lastBackupDate: Date?
@@ -60,6 +61,7 @@ struct VaultSettings: Codable {
             defaultSortOption: "Newest",
             showNotesInTopBar: false,
             showTodoInTopBar: false,
+            showPomodoroInTopBar: false,
             requireAuthToEdit: false
         )
     }
@@ -86,6 +88,7 @@ struct VaultSettings: Codable {
         defaultSortOption = try container.decodeIfPresent(String.self, forKey: .defaultSortOption) ?? "Newest"
         showNotesInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showNotesInTopBar) ?? false
         showTodoInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showTodoInTopBar) ?? false
+        showPomodoroInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showPomodoroInTopBar) ?? false
         requireAuthToEdit = try container.decodeIfPresent(Bool.self, forKey: .requireAuthToEdit) ?? false
         lastBackupDate = try container.decodeIfPresent(Date.self, forKey: .lastBackupDate)
     }
@@ -104,6 +107,7 @@ struct VaultSettings: Codable {
          defaultSortOption: String = "Newest",
          showNotesInTopBar: Bool = false,
          showTodoInTopBar: Bool = false,
+         showPomodoroInTopBar: Bool = false,
          requireAuthToEdit: Bool = false,
          lastBackupDate: Date? = nil) {
         self.menuBarIcon = menuBarIcon
@@ -125,6 +129,7 @@ struct VaultSettings: Codable {
         self.defaultSortOption = defaultSortOption
         self.showNotesInTopBar = showNotesInTopBar
         self.showTodoInTopBar = showTodoInTopBar
+        self.showPomodoroInTopBar = showPomodoroInTopBar
         self.requireAuthToEdit = requireAuthToEdit
         self.lastBackupDate = lastBackupDate
     }

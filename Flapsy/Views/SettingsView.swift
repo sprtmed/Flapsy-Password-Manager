@@ -92,7 +92,9 @@ struct SettingsView: View {
 
     /// Hairline divider between rows inside a settings card.
     private var rowDivider: some View {
-        Divider().overlay(theme.cardBorder)
+        Divider()
+            .overlay(theme.cardBorder)
+            .padding(.vertical, 6)
     }
 
     // MARK: - Launch at Login
@@ -746,7 +748,19 @@ struct SettingsView: View {
                 Spacer()
                 FlapsyToggle(isOn: $settings.showTodoInTopBar)
             }
-            Text("Show Notes / To-Do as their own icon in the top bar instead of inside the … menu.")
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "timer")
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.accentBlueLt)
+                    Text("Pomodoro in top bar")
+                        .font(.ui(13))
+                        .foregroundColor(theme.text)
+                }
+                Spacer()
+                FlapsyToggle(isOn: $settings.showPomodoroInTopBar)
+            }
+            Text("Show Notes / To-Do / Pomodoro as their own icon in the top bar instead of inside the … menu.")
                 .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)

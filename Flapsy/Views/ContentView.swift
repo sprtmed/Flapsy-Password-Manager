@@ -298,6 +298,13 @@ struct VaultContainerView: View {
                         }
                     }
 
+                    if settings.showPomodoroInTopBar {
+                        HeaderIconButton(systemName: "timer", help: "Pomodoro") {
+                            vault.openHeaderMenu = nil
+                            vault.navigateToPanel(.pomodoro)
+                        }
+                    }
+
                     HeaderIconButton(systemName: "gearshape", help: "Settings") {
                         vault.openHeaderMenu = nil
                         vault.navigateToPanel(.settings)
@@ -439,8 +446,10 @@ struct VaultContainerView: View {
                         selectMenu { vault.navigateToPanel(.todo) }
                     }
                 }
-                HeaderMenuItem(icon: "timer", label: "Pomodoro") {
-                    selectMenu { vault.navigateToPanel(.pomodoro) }
+                if !settings.showPomodoroInTopBar {
+                    HeaderMenuItem(icon: "timer", label: "Pomodoro") {
+                        selectMenu { vault.navigateToPanel(.pomodoro) }
+                    }
                 }
                 HeaderMenuDivider()
                 HeaderMenuItem(icon: "trash", label: "Trash",

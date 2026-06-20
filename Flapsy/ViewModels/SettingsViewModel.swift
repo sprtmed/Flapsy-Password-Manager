@@ -32,6 +32,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var defaultSortOption: SortOption = .newestFirst
     @Published var showNotesInTopBar: Bool = false
     @Published var showTodoInTopBar: Bool = false
+    @Published var showPomodoroInTopBar: Bool = false
     @Published var requireAuthToEdit: Bool = false
     @Published var lastBackupDate: Date? = nil
 
@@ -77,6 +78,7 @@ final class SettingsViewModel: ObservableObject {
         defaultSortOption = SortOption(rawValue: settings.defaultSortOption) ?? .newestFirst
         showNotesInTopBar = settings.showNotesInTopBar
         showTodoInTopBar = settings.showTodoInTopBar
+        showPomodoroInTopBar = settings.showPomodoroInTopBar
         requireAuthToEdit = settings.requireAuthToEdit
         lastBackupDate = settings.lastBackupDate
     }
@@ -102,6 +104,7 @@ final class SettingsViewModel: ObservableObject {
         defaultSortOption = .newestFirst
         showNotesInTopBar = false
         showTodoInTopBar = false
+        showPomodoroInTopBar = false
         requireAuthToEdit = false
         // lastBackupDate intentionally not reset
     }
@@ -127,6 +130,7 @@ final class SettingsViewModel: ObservableObject {
             defaultSortOption: defaultSortOption.rawValue,
             showNotesInTopBar: showNotesInTopBar,
             showTodoInTopBar: showTodoInTopBar,
+            showPomodoroInTopBar: showPomodoroInTopBar,
             requireAuthToEdit: requireAuthToEdit,
             lastBackupDate: lastBackupDate
         )
