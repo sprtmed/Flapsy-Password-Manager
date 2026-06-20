@@ -205,8 +205,12 @@ struct VaultContainerView: View {
             guard event.keyCode == 123 else { return event }                 // 123 = Left arrow
             let mods = event.modifierFlags.intersection([.command, .option, .control, .shift])
             guard mods.isEmpty else { return event }                          // plain Left arrow only
-            // Don't steal the arrow while editing text (cursor movement wins).
-            if event.window?.firstResponder is NSTextView { return event }
+            // Keep Left as a cursor key only where prose is actively edited — the
+            // note editor or an item edit form. Elsewhere (item detail, sub-panels)
+            // Left = Back, even if a search field still holds focus underneath. On
+            // the plain list goBack() is a no-op, so the search cursor still works.
+            if vault.selectedNoteID != nil { return event }                   // note editor
+            if vault.isEditingItem { return event }                           // item edit form
             return vault.goBack() ? nil : event
         }
     }
