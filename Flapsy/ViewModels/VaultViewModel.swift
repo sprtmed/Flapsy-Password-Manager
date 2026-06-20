@@ -1180,6 +1180,39 @@ final class VaultViewModel: ObservableObject {
         return (scoped.filter { $0.done }.count, scoped.count)
     }
 
+    /// Context-aware "Back" used by the Back button and the Left-arrow shortcut.
+    /// Returns true if it navigated (so the key press can be consumed), false if
+    /// there was nowhere to go back to (e.g. already on the list).
+    @discardableResult
+    func goBack() -> Bool {
+        // 1. Item detail / edit overlay (mirrors ItemDetailView's dismiss).
+        if selectedItemID != nil {
+            selectedItemID = nil
+            showPassword = false
+            showCardNumber = false
+            showCVV = false
+            isEditingItem = false
+            return true
+        }
+        // 2. Open note editor (mirrors NoteEditorView's leaveEditor).
+        if let id = selectedNoteID {
+            selectedNoteID = nil
+            discardNoteIfEmpty(id)
+            return true
+        }
+        // 3. Note tags sub-panel → back to Notes.
+        if currentPanel == .noteTags {
+            navigateToPanel(.notes)
+            return true
+        }
+        // 4. Any other sub-panel → back to the list.
+        if currentPanel != .list {
+            navigateToPanel(.list)
+            return true
+        }
+        return false
+    }
+
     func navigateToPanel(_ panel: VaultPanel) {
         let leavingHealth = currentPanel == .health
         currentPanel = panel

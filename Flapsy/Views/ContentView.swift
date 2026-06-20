@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ContentView: View {
     @EnvironmentObject var vault: VaultViewModel
@@ -70,6 +71,8 @@ struct VaultContainerView: View {
     @State private var menuAnchors: [HeaderMenuKind: CGRect] = [:]
     @State private var taskAnchors: [UUID: CGRect] = [:]
     @State private var taskPickerDate = Date()
+    /// Local key monitor for the Left-arrow "Back" shortcut.
+    @State private var backKeyMonitor: Any?
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -188,6 +191,24 @@ struct VaultContainerView: View {
         .animation(.easeOut(duration: 0.12), value: vault.openTaskDateMenu)
         .animation(.easeOut(duration: 0.12), value: vault.openTaskDatePicker)
         .animation(.easeOut(duration: 0.12), value: vault.showTodoScopeDatePicker)
+        .onAppear { installBackKeyMonitor() }
+        .onDisappear {
+            if let m = backKeyMonitor { NSEvent.removeMonitor(m); backKeyMonitor = nil }
+        }
+    }
+
+    /// Left Arrow goes "Back" — but only when not typing (otherwise the arrow must
+    /// move the text cursor), and only when there's somewhere to go back to.
+    private func installBackKeyMonitor() {
+        guard backKeyMonitor == nil else { return }
+        backKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard event.keyCode == 123 else { return event }                 // 123 = Left arrow
+            let mods = event.modifierFlags.intersection([.command, .option, .control, .shift])
+            guard mods.isEmpty else { return event }                          // plain Left arrow only
+            // Don't steal the arrow while editing text (cursor movement wins).
+            if event.window?.firstResponder is NSTextView { return event }
+            return vault.goBack() ? nil : event
+        }
     }
 
     /// Full-bleed transparent layer that dismisses an open dropdown on outside tap.
