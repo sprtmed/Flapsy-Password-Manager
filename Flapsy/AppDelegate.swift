@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var localKeyMonitor: Any?
     private var hotKeyRef: EventHotKeyRef?
     private var cancellables = Set<AnyCancellable>()
+    /// Browser domain fetched while the vault was locked; applied to search after unlock.
+    private var pendingBrowserDomain: String?
 
     // Shared state injected into SwiftUI
     let vaultViewModel = VaultViewModel()
@@ -54,6 +56,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self = self else { return }
                 if isUnlocked {
                     self.startAutoLockIfEnabled()
+                    if let domain = self.pendingBrowserDomain {
+                        self.pendingBrowserDomain = nil
+                        // Let the list panel appear and focus its search field first
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                            guard let self = self, self.window.isVisible else { return }
+                            self.applySearchDomain(domain)
+                        }
+                    }
                 } else {
                     self.autoLockService.stop()
                 }
@@ -181,6 +191,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if window.isVisible {
             window.orderOut(nil)
         } else {
+            // Capture the app the user came from before we activate ourselves
+            let sourceApp = NSWorkspace.shared.frontmostApplication
+
             // Reset runtime pin state to the persisted default each time window opens
             settingsViewModel.isWindowPinned = settingsViewModel.keepWindowOpen
             positionWindowBelowStatusItem()
@@ -192,6 +205,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     self?.vaultViewModel.isSearchFocused = true
                 }
+            }
+
+            if settingsViewModel.fillSearchFromBrowser {
+                prefillSearchFromBrowser(sourceApp)
+            }
+        }
+    }
+
+    // MARK: - Pre-fill Search From Browser
+
+    private func prefillSearchFromBrowser(_ app: NSRunningApplication?) {
+        pendingBrowserDomain = nil
+        guard BrowserDomainService.shared.isSupportedBrowser(app) else { return }
+
+        let searchAtRequest = vaultViewModel.searchText
+        BrowserDomainService.shared.fetchDomain(from: app) { [weak self] domain in
+            guard let self = self, let domain = domain, self.window.isVisible else { return }
+            if self.vaultViewModel.isUnlocked {
+                // Don't overwrite anything the user typed while the lookup ran
+                guard self.vaultViewModel.searchText == searchAtRequest else { return }
+                self.applySearchDomain(domain)
+            } else {
+                self.pendingBrowserDomain = domain
+            }
+        }
+    }
+
+    private func applySearchDomain(_ domain: String) {
+        guard vaultViewModel.currentPanel == .list else { return }
+        vaultViewModel.searchText = domain
+
+        // Select the pre-filled text so typing replaces it
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            if let editor = self?.window.firstResponder as? NSTextView, editor.string == domain {
+                editor.selectAll(nil)
             }
         }
     }

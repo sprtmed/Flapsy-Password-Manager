@@ -44,6 +44,8 @@ struct SettingsView: View {
                 settingsGroup("Vault") {
                     openURLCopySection
                     rowDivider
+                    browserDomainSection
+                    rowDivider
                     favoritesDefaultSection
                     rowDivider
                     defaultSortSection
@@ -630,6 +632,30 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Text("Shows a launch button that copies the password and opens the URL in your browser.")
+                .font(.ui(10))
+                .foregroundColor(theme.textFaint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - Search Current Browser Site
+
+    private var browserDomainSection: some View {
+        VStack(spacing: 4) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "safari")
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.accentBlueLt)
+                    Text("Search Current Browser Site")
+                        .font(.ui(13))
+                        .foregroundColor(theme.text)
+                }
+                Spacer()
+                FlapsyToggle(isOn: $settings.fillSearchFromBrowser)
+            }
+            .padding(.vertical, 4)
+            Text("When opened from Safari or Chrome, pre-fills the search with the site's domain. macOS asks once per browser for permission.")
                 .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)

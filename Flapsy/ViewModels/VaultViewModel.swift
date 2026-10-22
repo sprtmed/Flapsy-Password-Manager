@@ -337,11 +337,14 @@ final class VaultViewModel: ObservableObject {
             let nameContains = nameLower.contains(query)
             let userContains = userLower.contains(query)
             let noteContains = noteLower.contains(query)
+            // URL only for domain-like queries ("sachs.com"), so short words don't match every URL
+            let urlContains = query.contains(".") && (item.url ?? "").lowercased().contains(query)
 
-            if nameContains || userContains || noteContains {
+            if nameContains || userContains || noteContains || urlContains {
                 var score = 100
                 if nameLower.hasPrefix(query) { score += 50 }
                 else if nameContains { score += 25 }
+                if urlContains { score += 20 }
                 if userContains { score += 10 }
                 if noteContains { score += 5 }
                 return (item, score)

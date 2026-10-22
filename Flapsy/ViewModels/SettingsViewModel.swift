@@ -33,6 +33,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var showNotesInTopBar: Bool = false
     @Published var showTodoInTopBar: Bool = false
     @Published var showPomodoroInTopBar: Bool = false
+    @Published var fillSearchFromBrowser: Bool = false
     @Published var requireAuthToEdit: Bool = false
     @Published var lastBackupDate: Date? = nil
 
@@ -79,6 +80,7 @@ final class SettingsViewModel: ObservableObject {
         showNotesInTopBar = settings.showNotesInTopBar
         showTodoInTopBar = settings.showTodoInTopBar
         showPomodoroInTopBar = settings.showPomodoroInTopBar
+        fillSearchFromBrowser = settings.fillSearchFromBrowser
         requireAuthToEdit = settings.requireAuthToEdit
         lastBackupDate = settings.lastBackupDate
     }
@@ -105,6 +107,7 @@ final class SettingsViewModel: ObservableObject {
         showNotesInTopBar = false
         showTodoInTopBar = false
         showPomodoroInTopBar = false
+        fillSearchFromBrowser = false
         requireAuthToEdit = false
         // lastBackupDate intentionally not reset
     }
@@ -131,6 +134,7 @@ final class SettingsViewModel: ObservableObject {
             showNotesInTopBar: showNotesInTopBar,
             showTodoInTopBar: showTodoInTopBar,
             showPomodoroInTopBar: showPomodoroInTopBar,
+            fillSearchFromBrowser: fillSearchFromBrowser,
             requireAuthToEdit: requireAuthToEdit,
             lastBackupDate: lastBackupDate
         )

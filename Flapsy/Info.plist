@@ -22,6 +22,8 @@
 	<string>public.app-category.utilities</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Flapsy reads the address of your current browser tab to pre-fill the vault search with that site's domain.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Flapsy uses Touch ID to quickly unlock your vault.</string>
 	<key>NSHumanReadableCopyright</key>
