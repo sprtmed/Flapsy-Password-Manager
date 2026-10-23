@@ -731,7 +731,7 @@ struct ItemDetailView: View {
                             icon: vault.copiedField == "pass" ? "checkmark" : "arrow.up.forward.app",
                             isActive: vault.copiedField == "pass",
                             action: {
-                                vault.copyToClipboard(password, fieldName: "pass")
+                                vault.copyPassword(of: item, fieldName: "pass")
                                 let urlString = url.hasPrefix("http://") || url.hasPrefix("https://") ? url : "https://\(url)"
                                 if let openURL = URL(string: urlString) {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -751,6 +751,35 @@ struct ItemDetailView: View {
             .padding(12)
             .background(theme.fieldBg)
             .cornerRadius(8)
+        }
+
+        // Learned domains ("Save sachs.com to this login?"); × removes a wrong one
+        if let aliases = item.siteAliases, !aliases.isEmpty {
+            HStack(spacing: 6) {
+                Text("Also used on:")
+                    .font(.ui(10))
+                    .foregroundColor(theme.textFaint)
+                ForEach(aliases, id: \.self) { domain in
+                    HStack(spacing: 3) {
+                        Text(domain)
+                            .font(.ui(10))
+                            .foregroundColor(theme.textMuted)
+                        Button(action: { vault.removeSiteAlias(domain, from: item.id) }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 7, weight: .bold))
+                                .foregroundColor(theme.textFaint)
+                        }
+                        .buttonStyle(.hand)
+                        .help("Remove \(domain) from this login")
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(theme.fieldBg)
+                    .cornerRadius(10)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 4)
         }
 
         if let username = item.username {
@@ -783,7 +812,7 @@ struct ItemDetailView: View {
                     IconButton(
                         icon: vault.copiedField == "pass" ? "checkmark" : "doc.on.doc",
                         isActive: vault.copiedField == "pass",
-                        action: { vault.copyToClipboard(password, fieldName: "pass") }
+                        action: { vault.copyPassword(of: item, fieldName: "pass") }
                     )
                 }
             }
