@@ -139,6 +139,8 @@ final class VaultViewModel: ObservableObject {
     @Published var noteSearchText: String = ""
     /// Set to true to focus the Notes list search field (consumed by NotesView).
     @Published var isNoteSearchFocused: Bool = false
+    /// "Find in note" bar inside the note editor (here so Esc can close it).
+    @Published var showFindInNote: Bool = false
     @Published var activeNoteTag: String = "all"
     @Published var showNoteFavoritesOnly: Bool = false
     /// Notes list order (same options as the vault list). Default: last edited first.
@@ -1332,6 +1334,20 @@ final class VaultViewModel: ObservableObject {
     var todoProgress: (done: Int, total: Int) {
         let scoped = tasks.filter { taskMatchesScope($0) && (!todoFlagOnly || $0.pri) }
         return (scoped.filter { $0.done }.count, scoped.count)
+    }
+
+    /// A prompt or sheet is covering the window; Esc belongs to it (e.g. its Cancel button).
+    var isModalOverlayShown: Bool {
+        showReauthPrompt || showImportPreview || showExportSheet || showResetConfirmation
+            || showStartFreshConfirmation || showSecretKey || showEnableBiometricPrompt || isOnboarding
+    }
+
+    /// The add-item form has input that Esc/Back would throw away.
+    var hasUnsavedNewItem: Bool {
+        currentPanel == .addNew && ![
+            newName, newUrl, newUsername, newPassword, newCardHolder, newCardNumber,
+            newExpiry, newCvv, newCardNotes, newNoteText, newLoginNotes,
+        ].allSatisfy { $0.isEmpty }
     }
 
     /// Context-aware "Back" used by the Back button and the Left-arrow shortcut.

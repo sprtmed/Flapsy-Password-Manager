@@ -308,13 +308,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupLocalKeyMonitor() {
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self else { return event }
-            // Esc key dismisses the window (even when pinned)
             if event.keyCode == 53 && self.window.isVisible {
-                self.window.orderOut(nil)
-                return nil
+                return self.handleEscape(event)
             }
             return event
         }
+    }
+
+    /// Esc closes the innermost thing first and goes back one level; it hides the window
+    /// (even when pinned) only from the password list or the lock screen.
+    private func handleEscape(_ event: NSEvent) -> NSEvent? {
+        let vault = vaultViewModel
+
+        // Alerts, sheets and prompts handle Esc themselves (their Cancel button)
+        if window.attachedSheet != nil || NSApp.keyWindow !== window || vault.isModalOverlayShown {
+            return event
+        }
+        guard vault.isUnlocked else {
+            window.orderOut(nil)
+            return nil
+        }
+
+        // Open dropdowns / date pickers: just close them
+        if vault.openHeaderMenu != nil || vault.openTaskDateMenu != nil
+            || vault.openTaskDatePicker != nil || vault.showTodoScopeDatePicker {
+            withAnimation(.easeOut(duration: 0.1)) {
+                vault.openHeaderMenu = nil
+                vault.openTaskDateMenu = nil
+                vault.openTaskDatePicker = nil
+                vault.showTodoScopeDatePicker = false
+            }
+            return nil
+        }
+        if vault.showFindInNote {
+            withAnimation(.easeInOut(duration: 0.15)) { vault.showFindInNote = false }
+            return nil
+        }
+        if vault.showExpandedNote {
+            vault.showExpandedNote = false
+            return nil
+        }
+
+        // Never throw away unsaved edits with Esc
+        if vault.isEditingItem || vault.hasUnsavedNewItem { return nil }
+
+        if withAnimation(.easeInOut(duration: 0.15), { vault.goBack() }) { return nil }
+
+        window.orderOut(nil)
+        return nil
     }
 
     // MARK: - Global Hotkey (⌘+Shift+P)

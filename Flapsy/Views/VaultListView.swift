@@ -81,18 +81,8 @@ struct VaultListView: View {
                     withAnimation(.easeInOut(duration: 0.15)) { selectItem(first.id) }
                 }
                 return nil
-            case 53: // Escape
-                if vault.selectedItemID != nil {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        vault.selectedItemID = nil
-                        vault.showPassword = false
-                        vault.showCardNumber = false
-                        vault.showCVV = false
-                        vault.isEditingItem = false
-                    }
-                    return nil
-                }
-                return event
+            // Escape is handled app-wide (AppDelegate.handleEscape): closes the detail via
+            // goBack(), but leaves an item being edited alone
             default:
                 return event
             }

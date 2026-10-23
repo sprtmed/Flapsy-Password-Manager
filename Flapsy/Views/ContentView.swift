@@ -456,7 +456,8 @@ struct VaultContainerView: View {
             }
             Spacer()
             HStack(spacing: 4) {
-                Button(action: { vault.navigateToPanel(vault.currentPanel == .noteTags ? .notes : .list) }) {
+                // Context-aware: an open note → Notes overview, note tags → Notes, else → list
+                Button(action: { vault.goBack() }) {
                     HStack(spacing: 4) {
                         Text("\u{2190}")
                             .font(.system(size: 11))

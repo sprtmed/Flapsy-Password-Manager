@@ -351,7 +351,6 @@ private struct NoteEditorView: View {
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
     @StateObject private var controller = RichTextController()
-    @State private var showInNoteSearch = false
     @State private var inNoteQuery = ""
     @State private var showTagMenu = false
     @FocusState private var inNoteSearchFocused: Bool
@@ -404,10 +403,10 @@ private struct NoteEditorView: View {
                     Button(action: { toggleInNoteSearch() }) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 12))
-                            .foregroundColor(showInNoteSearch ? theme.accentBlueLt : theme.textSecondary)
+                            .foregroundColor(vault.showFindInNote ? theme.accentBlueLt : theme.textSecondary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(showInNoteSearch ? theme.pillBg : theme.fieldBg)
+                            .background(vault.showFindInNote ? theme.pillBg : theme.fieldBg)
                             .cornerRadius(6)
                     }
                     .buttonStyle(.hand)
@@ -431,7 +430,7 @@ private struct NoteEditorView: View {
             .padding(.top, 10)
             .padding(.bottom, 8)
 
-            if showInNoteSearch {
+            if vault.showFindInNote {
                 inNoteSearchBar
             }
 
@@ -475,10 +474,17 @@ private struct NoteEditorView: View {
         .onChange(of: inNoteQuery) { query in
             controller.runSearch(query)
         }
-        .onChange(of: showInNoteSearch) { isOn in
-            if isOn { inNoteSearchFocused = true }
+        .onChange(of: vault.showFindInNote) { isOn in
+            if isOn {
+                inNoteSearchFocused = true
+            } else {
+                // Closed by the ✕ button, the toolbar toggle, or Esc
+                inNoteQuery = ""
+                controller.clearSearch()
+            }
         }
         .onDisappear {
+            vault.showFindInNote = false
             controller.clearSearch()
             vault.discardNoteIfEmpty(noteID)
         }
@@ -572,9 +578,9 @@ private struct NoteEditorView: View {
 
     private func toggleInNoteSearch() {
         withAnimation(.easeInOut(duration: 0.15)) {
-            showInNoteSearch.toggle()
+            vault.showFindInNote.toggle()
         }
-        if !showInNoteSearch {
+        if !vault.showFindInNote {
             inNoteQuery = ""
             controller.clearSearch()
         }
@@ -582,7 +588,7 @@ private struct NoteEditorView: View {
 
     private func closeInNoteSearch() {
         withAnimation(.easeInOut(duration: 0.15)) {
-            showInNoteSearch = false
+            vault.showFindInNote = false
         }
         inNoteQuery = ""
         controller.clearSearch()
