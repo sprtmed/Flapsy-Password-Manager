@@ -17,6 +17,8 @@ struct SettingsView: View {
                     menuBarIconPicker
                     rowDivider
                     topNavSection
+                    rowDivider
+                    dueTasksMenuBarSection
                 }
 
                 settingsGroup("General") {
@@ -787,6 +789,30 @@ struct SettingsView: View {
                 FlapsyToggle(isOn: $settings.showPomodoroInTopBar)
             }
             Text("Show Notes / To-Do / Pomodoro as their own icon in the top bar instead of inside the … menu.")
+                .font(.ui(10))
+                .foregroundColor(theme.textFaint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - Due Tasks in Menu Bar
+
+    private var dueTasksMenuBarSection: some View {
+        VStack(spacing: 4) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.accentBlueLt)
+                    Text("Due tasks in menu bar")
+                        .font(.ui(13))
+                        .foregroundColor(theme.text)
+                }
+                Spacer()
+                FlapsyToggle(isOn: $settings.showDueTasksInMenuBar)
+            }
+            .padding(.vertical, 4)
+            Text("Shows how many To-Do tasks are due today or overdue next to the menu bar icon (while unlocked).")
                 .font(.ui(10))
                 .foregroundColor(theme.textFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)

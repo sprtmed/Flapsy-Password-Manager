@@ -285,6 +285,7 @@ struct VaultListView: View {
         let items = vault.filteredItems
         let readyID = movedSelectionWithArrows ? nil : vault.readySiteMatch(in: items)?.id
         let noteEntries = vault.vaultSearchNoteEntries
+        let searchTasks = vault.vaultSearchTasks
         return ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(items) { item in
@@ -293,7 +294,7 @@ struct VaultListView: View {
                 if items.isEmpty {
                     if vault.isSiteSearch, let site = vault.browserSite {
                         siteEmptyState(site)
-                    } else if noteEntries.isEmpty {
+                    } else if noteEntries.isEmpty && searchTasks.isEmpty {
                         Text("No items found")
                             .font(.ui(12))
                             .foregroundColor(theme.textFaint)
@@ -303,6 +304,9 @@ struct VaultListView: View {
                 }
                 if !noteEntries.isEmpty {
                     notesSection(noteEntries)
+                }
+                if !searchTasks.isEmpty {
+                    tasksSection(searchTasks)
                 }
             }
         }
@@ -380,6 +384,83 @@ struct VaultListView: View {
         .onTapGesture { withAnimation(.easeInOut(duration: 0.15)) { vault.openNoteFromVaultSearch(entry.note.id) } }
         .handCursor()
         .help("Open in Notes")
+    }
+
+    // MARK: - Tasks in Search Results
+
+    /// To-Do tasks matching the vault search. The circle ticks a task; the row opens To-Do.
+    private func tasksSection(_ tasks: [TodoTask]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("TASKS \u{00B7} \(tasks.count)")
+                .font(.ui(10, weight: .bold))
+                .tracking(0.6)
+                .foregroundColor(theme.textFaint)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 4)
+
+            ForEach(tasks.prefix(Self.maxSearchNotes)) { task in
+                searchTaskRow(task)
+            }
+
+            if tasks.count > Self.maxSearchNotes {
+                Button(action: { vault.openTodoFromVaultSearch() }) {
+                    Text("\(tasks.count - Self.maxSearchNotes) more in To-Do")
+                        .font(.ui(11, weight: .medium))
+                        .foregroundColor(theme.accentBlueLt)
+                }
+                .buttonStyle(.hand)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+        }
+    }
+
+    private func searchTaskRow(_ task: TodoTask) -> some View {
+        HStack(spacing: 10) {
+            Button(action: { withAnimation(.easeInOut(duration: 0.15)) { vault.toggleTask(task.id) } }) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(task.done ? theme.accentGreen : theme.textGhost, lineWidth: 1.6)
+                        .frame(width: 20, height: 20)
+                    if task.done {
+                        Circle().fill(theme.accentGreen).frame(width: 20, height: 20)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.hand)
+            .help(task.done ? "Mark as not done" : "Mark as done")
+
+            Text(task.text)
+                .font(.ui(13, weight: .medium))
+                .foregroundColor(task.done ? theme.textFaint : theme.text)
+                .strikethrough(task.done, color: theme.textFaint)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+
+            if task.pri {
+                Image(systemName: "flag.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.accentRed)
+            }
+            if let label = task.dueLabel() {
+                Text(label)
+                    .font(.mono(10, weight: .medium))
+                    .foregroundColor(task.isOverdue() ? theme.accentRed : theme.textMuted)
+            }
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 16)
+        .contentShape(Rectangle())
+        .onTapGesture { withAnimation(.easeInOut(duration: 0.15)) { vault.openTodoFromVaultSearch() } }
+        .handCursor()
+        .help("Open in To-Do")
     }
 
     // MARK: - Browser Site Empty State

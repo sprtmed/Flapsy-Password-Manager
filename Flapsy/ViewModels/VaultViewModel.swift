@@ -194,7 +194,11 @@ final class VaultViewModel: ObservableObject {
 
     // MARK: - Toast
     @Published var toastMessage: String? = nil
+    /// The current toast offers Undo (see `undoTaskDeletion`).
+    @Published var toastCanUndo: Bool = false
     private var toastWorkItem: DispatchWorkItem?
+    /// Tasks removed by the last delete / Clear completed, with their original positions.
+    private var deletedTasksForUndo: [(index: Int, task: TodoTask)] = []
 
     // MARK: - Learned Sites
     @Published var siteAliasOffer: SiteAliasOffer? = nil
@@ -1039,14 +1043,19 @@ final class VaultViewModel: ObservableObject {
 
     /// Shows a transient toast message, auto-dismissed after a short delay.
     /// Animation is applied at the view layer (see ContentView).
-    func showToast(_ message: String) {
+    func showToast(_ message: String, canUndo: Bool = false) {
         toastMessage = message
+        toastCanUndo = canUndo
+        if !canUndo { deletedTasksForUndo = [] }
         toastWorkItem?.cancel()
         let work = DispatchWorkItem { [weak self] in
             self?.toastMessage = nil
+            self?.toastCanUndo = false
+            self?.deletedTasksForUndo = []
         }
         toastWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
+        // Longer when there's an Undo button to reach
+        DispatchQueue.main.asyncAfter(deadline: .now() + (canUndo ? 5.0 : 2.0), execute: work)
     }
 
     /// Maps an internal copy field name to a human-readable label for toasts.
@@ -1198,11 +1207,16 @@ final class VaultViewModel: ObservableObject {
 
     // MARK: - To-Do (standalone To-Do mini-app)
 
-    /// Adds a new task to the top of the list (quick-add prepends).
+    /// Adds a new task to the top of the list (quick-add prepends). Dates, "!" and
+    /// "every …" in the text become the due date, flag and repeat (see `TaskQuickAdd`).
     func addTask(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        tasks.insert(TodoTask(text: trimmed), at: 0)
+        let parsed = TaskQuickAdd.parse(trimmed)
+        tasks.insert(TodoTask(
+            text: parsed.title, pri: parsed.flagged, due: parsed.due, repeatRule: parsed.repeatRule,
+            monthlyAnchorDay: parsed.repeatRule == .monthly ? parsed.due.map { Calendar.current.component(.day, from: $0) } : nil
+        ), at: 0)
         newTaskText = ""
     }
 
@@ -1211,8 +1225,14 @@ final class VaultViewModel: ObservableObject {
     func toggleTask(_ id: UUID) {
         guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
         if tasks[idx].repeatRule != .never && !tasks[idx].done {
+            // Remember the day-of-month before advancing, so "monthly on the 31st" survives February
+            if tasks[idx].repeatRule == .monthly && tasks[idx].monthlyAnchorDay == nil {
+                tasks[idx].monthlyAnchorDay = Calendar.current.component(.day, from: tasks[idx].due ?? Date())
+            }
             if let next = tasks[idx].nextOccurrence() {
                 tasks[idx].due = next
+                // Not "done" (it stays active), but remembered so progress counts it for today
+                tasks[idx].completedAt = Date()
                 showToast("Repeats \u{00B7} next \(tasks[idx].dueLabel() ?? "")")
             }
             return
@@ -1221,13 +1241,34 @@ final class VaultViewModel: ObservableObject {
         tasks[idx].completedAt = tasks[idx].done ? Date() : nil
     }
 
+    /// Deletes a task; the toast offers Undo for a few seconds.
     func deleteTask(_ id: UUID) {
-        tasks.removeAll { $0.id == id }
+        guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
+        let task = tasks.remove(at: idx)
+        deletedTasksForUndo = [(idx, task)]
+        showToast("Task deleted", canUndo: true)
     }
 
-    /// Removes all completed (non-repeating) tasks.
+    /// Removes all completed (non-repeating) tasks; the toast offers Undo.
     func clearCompletedTasks() {
+        let removed = tasks.enumerated().filter { $0.element.done }.map { (index: $0.offset, task: $0.element) }
+        guard !removed.isEmpty else { return }
         tasks.removeAll { $0.done }
+        deletedTasksForUndo = removed
+        showToast("Cleared \(removed.count) completed task\(removed.count == 1 ? "" : "s")", canUndo: true)
+    }
+
+    /// Puts back the tasks removed by the last delete / Clear completed, at their old positions.
+    func undoTaskDeletion() {
+        let restore = deletedTasksForUndo.sorted { $0.index < $1.index }
+        guard !restore.isEmpty else { return }
+        for entry in restore where !tasks.contains(where: { $0.id == entry.task.id }) {
+            tasks.insert(entry.task, at: min(entry.index, tasks.count))
+        }
+        toastWorkItem?.cancel()
+        toastMessage = nil
+        toastCanUndo = false
+        deletedTasksForUndo = []
     }
 
     /// Whether any completed task is currently visible under the active filters.
@@ -1243,11 +1284,14 @@ final class VaultViewModel: ObservableObject {
     func setTaskDue(_ id: UUID, _ date: Date?) {
         guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[idx].due = date.map { Calendar.current.startOfDay(for: $0) }
+        // A date picked by hand sets the day a monthly repeat sticks to
+        tasks[idx].monthlyAnchorDay = date.map { Calendar.current.component(.day, from: $0) }
     }
 
     func setTaskRepeat(_ id: UUID, _ rule: TaskRepeat) {
         guard let idx = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[idx].repeatRule = rule
+        tasks[idx].monthlyAnchorDay = tasks[idx].due.map { Calendar.current.component(.day, from: $0) }
     }
 
     func editTaskText(_ id: UUID, _ text: String) {
@@ -1262,14 +1306,15 @@ final class VaultViewModel: ObservableObject {
         switch scope {
         case .today: return today
         case .tomorrow: return calendar.date(byAdding: .day, value: 1, to: today)
-        case .thisWeekend: return nextWeekday(7, from: today, calendar: calendar) // Saturday
-        case .nextWeek: return nextWeekday(2, from: today, calendar: calendar)    // Monday
+        case .thisWeekend: return TaskDates.thisWeekendDate(now: now, calendar: calendar)
+        case .nextWeek: return TaskDates.nextWeekStart(now: now, calendar: calendar)
         default: return nil
         }
     }
 
-    private static func nextWeekday(_ weekday: Int, from date: Date, calendar: Calendar) -> Date {
-        calendar.nextDate(after: date, matching: DateComponents(weekday: weekday), matchingPolicy: .nextTime) ?? date
+    /// Saturday and Sunday of "this weekend" (see `TaskDates.thisWeekend`).
+    static func thisWeekend(now: Date = Date(), calendar: Calendar = .current) -> (saturday: Date, sunday: Date) {
+        TaskDates.thisWeekend(now: now, calendar: calendar)
     }
 
     // MARK: To-Do filtering / grouping
@@ -1296,10 +1341,10 @@ final class VaultViewModel: ObservableObject {
         case .today: return task.due.map { cal.isDateInToday($0) } ?? false
         case .tomorrow: return task.due.map { cal.isDateInTomorrow($0) } ?? false
         case .thisWeekend:
-            guard let due = task.due, let sat = Self.presetDate(.thisWeekend),
-                  let sun = cal.date(byAdding: .day, value: 1, to: sat) else { return false }
+            guard let due = task.due else { return false }
+            let weekend = Self.thisWeekend()
             let d = cal.startOfDay(for: due)
-            return d == cal.startOfDay(for: sat) || d == cal.startOfDay(for: sun)
+            return d == weekend.saturday || d == weekend.sunday
         case .nextWeek:
             guard let due = task.due, let mon = Self.presetDate(.nextWeek),
                   let end = cal.date(byAdding: .day, value: 6, to: mon) else { return false }
@@ -1326,14 +1371,72 @@ final class VaultViewModel: ObservableObject {
         return TaskBucket.allCases.compactMap { bucket in
             guard let ts = groups[bucket], !ts.isEmpty else { return nil }
             if bucket == .completed && todoStatus != .all { return nil }
-            return (bucket, ts)
+            return (bucket, bucket == .completed ? Self.byCompletion(ts) : TodoTask.agendaOrder(ts))
         }
     }
 
-    /// done / total within the current scope (header progress).
+    /// Progress for the header bar. One-off tasks count as before. A repeating task never
+    /// becomes "done", so it counts only for today: done once ticked today, open while it's
+    /// due today or overdue — otherwise repeats would keep the bar from ever reaching 100%.
     var todoProgress: (done: Int, total: Int) {
-        let scoped = tasks.filter { taskMatchesScope($0) && (!todoFlagOnly || $0.pri) }
-        return (scoped.filter { $0.done }.count, scoped.count)
+        let cal = Calendar.current
+        let startToday = cal.startOfDay(for: Date())
+        var done = 0, total = 0
+        for task in tasks where !todoFlagOnly || task.pri {
+            if task.repeatRule == .never {
+                guard taskMatchesScope(task) else { continue }
+                total += 1
+                if task.done { done += 1 }
+                continue
+            }
+            let tickedToday = task.completedAt.map { cal.isDateInToday($0) } ?? false
+            let dueNow = task.due.map { cal.startOfDay(for: $0) <= startToday } ?? false
+            // A repeat ticked today has already moved to its next date; keep it in Today's progress
+            let inScope = taskMatchesScope(task) || (tickedToday && todoScope == .today)
+            guard inScope else { continue }
+            if tickedToday { total += 1; done += 1 }
+            else if dueNow { total += 1 }
+        }
+        return (done, total)
+    }
+
+    /// Open tasks due today or overdue — the badge on To-Do and (optionally) the menu bar.
+    var dueTaskCount: Int {
+        let startToday = Calendar.current.startOfDay(for: Date())
+        return tasks.filter { task in
+            guard !task.done, let due = task.due else { return false }
+            return Calendar.current.startOfDay(for: due) <= startToday
+        }.count
+    }
+
+    /// Tasks for display: open ones by date (flagged first per day), then completed ones
+    /// most recently finished first.
+    var displayedTasks: [TodoTask] {
+        let filtered = filteredTasks
+        return TodoTask.agendaOrder(filtered.filter { !$0.done }) + Self.byCompletion(filtered.filter { $0.done })
+    }
+
+    private static func byCompletion(_ tasks: [TodoTask]) -> [TodoTask] {
+        tasks.sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
+    }
+
+    /// Tasks matching the main vault search, shown below items and notes: open first
+    /// (soonest due), then completed. Hidden while a category/type/favorites filter is on.
+    var vaultSearchTasks: [TodoTask] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty, activeCategory == "all", typeFilter == nil, !showFavoritesOnly else { return [] }
+        let matches = tasks.filter { $0.text.lowercased().contains(query) }
+        let open = matches.filter { !$0.done }
+            .sorted { ($0.due ?? .distantFuture) < ($1.due ?? .distantFuture) }
+        return open + Self.byCompletion(matches.filter { $0.done })
+    }
+
+    /// Opens To-Do with filters reset so a task picked from the vault search is visible.
+    func openTodoFromVaultSearch() {
+        todoStatus = .all
+        todoScope = .anytime
+        todoFlagOnly = false
+        navigateToPanel(.todo)
     }
 
     /// A prompt or sheet is covering the window; Esc belongs to it (e.g. its Cancel button).

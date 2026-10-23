@@ -33,6 +33,9 @@ struct TodoTask: Codable, Identifiable {
     var repeatRule: TaskRepeat
     var createdAt: Date
     var completedAt: Date?
+    /// Day of month a monthly repeat sticks to (e.g. 31 → Jan 31, Feb 28, Mar 31).
+    /// nil = use the due date's day.
+    var monthlyAnchorDay: Int?
 
     init(
         id: UUID = UUID(),
@@ -42,7 +45,8 @@ struct TodoTask: Codable, Identifiable {
         due: Date? = nil,
         repeatRule: TaskRepeat = .never,
         createdAt: Date = Date(),
-        completedAt: Date? = nil
+        completedAt: Date? = nil,
+        monthlyAnchorDay: Int? = nil
     ) {
         self.id = id
         self.text = text
@@ -52,11 +56,12 @@ struct TodoTask: Codable, Identifiable {
         self.repeatRule = repeatRule
         self.createdAt = createdAt
         self.completedAt = completedAt
+        self.monthlyAnchorDay = monthlyAnchorDay
     }
 
     // Forward-compatible decode so future fields don't break older vaults.
     enum CodingKeys: String, CodingKey {
-        case id, text, done, pri, due, repeatRule, createdAt, completedAt
+        case id, text, done, pri, due, repeatRule, createdAt, completedAt, monthlyAnchorDay
     }
 
     init(from decoder: Decoder) throws {
@@ -69,6 +74,7 @@ struct TodoTask: Codable, Identifiable {
         repeatRule = try c.decodeIfPresent(TaskRepeat.self, forKey: .repeatRule) ?? .never
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         completedAt = try c.decodeIfPresent(Date.self, forKey: .completedAt)
+        monthlyAnchorDay = try c.decodeIfPresent(Int.self, forKey: .monthlyAnchorDay)
     }
 }
 
@@ -102,6 +108,38 @@ enum TaskDateScope: Equatable {
     }
 }
 
+// MARK: - Preset dates (shared by the date menus and quick-add parsing)
+
+enum TaskDates {
+    /// Saturday and Sunday of "this weekend": the current one on a Saturday or Sunday,
+    /// otherwise the coming one.
+    static func thisWeekend(now: Date = Date(), calendar: Calendar = .current) -> (saturday: Date, sunday: Date) {
+        let today = calendar.startOfDay(for: now)
+        let saturday: Date
+        switch calendar.component(.weekday, from: today) {
+        case 7: saturday = today                                                          // Saturday
+        case 1: saturday = calendar.date(byAdding: .day, value: -1, to: today) ?? today   // Sunday
+        default: saturday = nextWeekday(7, after: today, calendar: calendar)
+        }
+        return (saturday, calendar.date(byAdding: .day, value: 1, to: saturday) ?? saturday)
+    }
+
+    /// Due date for "This weekend": Saturday, or today if it's already Sunday.
+    static func thisWeekendDate(now: Date = Date(), calendar: Calendar = .current) -> Date {
+        max(thisWeekend(now: now, calendar: calendar).saturday, calendar.startOfDay(for: now))
+    }
+
+    /// Due date for "Next week": the coming Monday.
+    static func nextWeekStart(now: Date = Date(), calendar: Calendar = .current) -> Date {
+        nextWeekday(2, after: calendar.startOfDay(for: now), calendar: calendar)
+    }
+
+    /// First date strictly after `date` falling on `weekday` (1 = Sunday … 7 = Saturday).
+    static func nextWeekday(_ weekday: Int, after date: Date, calendar: Calendar = .current) -> Date {
+        calendar.nextDate(after: date, matching: DateComponents(weekday: weekday), matchingPolicy: .nextTime) ?? date
+    }
+}
+
 // MARK: - Date helpers (computed against the live clock each render)
 
 /// Agenda buckets a task falls into, in display order.
@@ -123,6 +161,18 @@ enum TaskBucket: Int, CaseIterable {
 }
 
 extension TodoTask {
+    /// Order inside an agenda group: earliest date first (undated last), flagged first
+    /// within the same day, then the order they're stored in (newest first).
+    static func agendaOrder(_ tasks: [TodoTask], calendar: Calendar = .current) -> [TodoTask] {
+        tasks.enumerated().sorted { a, b in
+            let da = a.element.due.map { calendar.startOfDay(for: $0) } ?? .distantFuture
+            let db = b.element.due.map { calendar.startOfDay(for: $0) } ?? .distantFuture
+            if da != db { return da < db }
+            if a.element.pri != b.element.pri { return a.element.pri }
+            return a.offset < b.offset
+        }.map(\.element)
+    }
+
     /// End of the current calendar week (exclusive) and of the following week, so
     /// bucketing and labels agree on what "this week" / "next week" mean.
     static func weekBoundaries(now: Date, calendar: Calendar) -> (thisWeekEnd: Date, nextWeekEnd: Date)? {
@@ -182,6 +232,7 @@ extension TodoTask {
         guard repeatRule != .never else { return nil }
         let startToday = calendar.startOfDay(for: now)
         var date = calendar.startOfDay(for: due ?? now)
+        let anchorDay = monthlyAnchorDay ?? calendar.component(.day, from: date)
 
         func step(_ from: Date) -> Date {
             switch repeatRule {
@@ -190,7 +241,12 @@ extension TodoTask {
             case .weekly:
                 return calendar.date(byAdding: .day, value: 7, to: from) ?? from
             case .monthly:
-                return calendar.date(byAdding: .month, value: 1, to: from) ?? from
+                // Next month on the anchor day, clamped to the month's length (31 → 28/30/31)
+                guard let nextMonth = calendar.date(byAdding: .month, value: 1, to: from),
+                      let days = calendar.range(of: .day, in: .month, for: nextMonth) else { return from }
+                var comps = calendar.dateComponents([.year, .month], from: nextMonth)
+                comps.day = min(anchorDay, days.count)
+                return calendar.date(from: comps) ?? nextMonth
             case .weekdays:
                 var d = calendar.date(byAdding: .day, value: 1, to: from) ?? from
                 while calendar.isDateInWeekend(d) {

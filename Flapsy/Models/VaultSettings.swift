@@ -36,6 +36,8 @@ struct VaultSettings: Codable {
     var showNotesInTopBar: Bool
     var showTodoInTopBar: Bool
     var showPomodoroInTopBar: Bool
+    /// Show the number of due/overdue tasks next to the menu bar icon. Default off.
+    var showDueTasksInMenuBar: Bool
     /// Pre-fill the vault search with the active browser tab's domain when opening. Default off.
     var fillSearchFromBrowser: Bool
     /// Require Touch ID / master password before editing a login. Default off.
@@ -64,6 +66,7 @@ struct VaultSettings: Codable {
             showNotesInTopBar: false,
             showTodoInTopBar: false,
             showPomodoroInTopBar: false,
+            showDueTasksInMenuBar: false,
             fillSearchFromBrowser: false,
             requireAuthToEdit: false
         )
@@ -92,6 +95,7 @@ struct VaultSettings: Codable {
         showNotesInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showNotesInTopBar) ?? false
         showTodoInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showTodoInTopBar) ?? false
         showPomodoroInTopBar = try container.decodeIfPresent(Bool.self, forKey: .showPomodoroInTopBar) ?? false
+        showDueTasksInMenuBar = try container.decodeIfPresent(Bool.self, forKey: .showDueTasksInMenuBar) ?? false
         fillSearchFromBrowser = try container.decodeIfPresent(Bool.self, forKey: .fillSearchFromBrowser) ?? false
         requireAuthToEdit = try container.decodeIfPresent(Bool.self, forKey: .requireAuthToEdit) ?? false
         lastBackupDate = try container.decodeIfPresent(Date.self, forKey: .lastBackupDate)
@@ -112,6 +116,7 @@ struct VaultSettings: Codable {
          showNotesInTopBar: Bool = false,
          showTodoInTopBar: Bool = false,
          showPomodoroInTopBar: Bool = false,
+         showDueTasksInMenuBar: Bool = false,
          fillSearchFromBrowser: Bool = false,
          requireAuthToEdit: Bool = false,
          lastBackupDate: Date? = nil) {
@@ -135,6 +140,7 @@ struct VaultSettings: Codable {
         self.showNotesInTopBar = showNotesInTopBar
         self.showTodoInTopBar = showTodoInTopBar
         self.showPomodoroInTopBar = showPomodoroInTopBar
+        self.showDueTasksInMenuBar = showDueTasksInMenuBar
         self.fillSearchFromBrowser = fillSearchFromBrowser
         self.requireAuthToEdit = requireAuthToEdit
         self.lastBackupDate = lastBackupDate

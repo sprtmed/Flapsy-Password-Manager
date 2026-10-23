@@ -49,6 +49,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
+        // Keep the menu bar due-task count current: task edits, lock/unlock, and midnight
+        Publishers.Merge(
+            vaultViewModel.$tasks.map { _ in () },
+            vaultViewModel.$isUnlocked.map { _ in () }
+        )
+        .debounce(for: .milliseconds(200), scheduler: RunLoop.main)
+        .sink { [weak self] _ in self?.updateMenuBarIcon() }
+        .store(in: &cancellables)
+        NotificationCenter.default.addObserver(forName: .NSCalendarDayChanged, object: nil, queue: .main) { [weak self] _ in
+            self?.updateMenuBarIcon()
+        }
+
         // Start/stop auto-lock when vault lock state changes
         vaultViewModel.$isUnlocked
             .receive(on: RunLoop.main)
@@ -148,12 +160,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.image = image?.withSymbolConfiguration(config)
         button.image?.isTemplate = true
 
-        if showLabel {
-            button.title = " \(label)"
-            button.imagePosition = .imageLeading
-        } else {
+        // Optional due-task count (tasks are only readable while unlocked)
+        let dueCount = settingsViewModel.showDueTasksInMenuBar && vaultViewModel.isUnlocked
+            ? vaultViewModel.dueTaskCount : 0
+        var parts: [String] = []
+        if showLabel { parts.append(label) }
+        if dueCount > 0 { parts.append("\(dueCount)") }
+
+        if parts.isEmpty {
             button.title = ""
             button.imagePosition = .imageOnly
+        } else {
+            button.title = " " + parts.joined(separator: " \u{00B7} ")
+            button.imagePosition = .imageLeading
         }
     }
 

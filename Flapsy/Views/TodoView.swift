@@ -60,13 +60,22 @@ struct TodoView: View {
     // MARK: - Quick add
 
     private var addField: some View {
+        VStack(spacing: 0) {
+            addFieldBox
+            if let parsed = quickAddPreview {
+                quickAddPreviewRow(parsed)
+            }
+        }
+    }
+
+    private var addFieldBox: some View {
         HStack(spacing: 10) {
             Image(systemName: "plus")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(theme.textFaint)
             ZStack(alignment: .leading) {
                 if vault.newTaskText.isEmpty {
-                    Text("Add a task, then press Enter")
+                    Text("Add a task \u{2014} try \u{201C}Pay rent fri !\u{201D}")
                         .font(.ui(13))
                         .foregroundColor(theme.textFaint)
                 }
@@ -83,7 +92,61 @@ struct TodoView: View {
         .background(theme.inputBg)
         .cornerRadius(10)
         .padding(.horizontal, 20)
+        .padding(.bottom, quickAddPreview == nil ? 10 : 4)
+    }
+
+    // MARK: - Quick-add preview
+
+    /// What Enter will create, when the text contains a date, "!" or "every …".
+    private var quickAddPreview: TaskQuickAdd? {
+        let parsed = TaskQuickAdd.parse(vault.newTaskText)
+        return parsed.hasExtras ? parsed : nil
+    }
+
+    private func quickAddPreviewRow(_ parsed: TaskQuickAdd) -> some View {
+        HStack(spacing: 6) {
+            Text(parsed.title)
+                .font(.ui(11))
+                .foregroundColor(theme.textFaint)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            if let due = parsed.due {
+                previewChip(icon: "calendar", label: Self.previewDate(due))
+            }
+            if parsed.repeatRule != .never {
+                previewChip(icon: "arrow.2.squarepath", label: parsed.repeatRule.label)
+            }
+            if parsed.flagged {
+                previewChip(icon: "flag.fill", label: "Flagged", tint: theme.accentRed)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 24)
         .padding(.bottom, 10)
+        .transition(.opacity)
+    }
+
+    private func previewChip(icon: String, label: String, tint: Color? = nil) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon).font(.system(size: 9))
+            Text(label).font(.mono(10, weight: .medium)).lineLimit(1)
+        }
+        .fixedSize()
+        .foregroundColor(tint ?? theme.accentBlueLt)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background((tint ?? theme.accentBlue).opacity(0.12))
+        .cornerRadius(5)
+    }
+
+    /// "Today", "Tomorrow", else "Fri 30 Oct".
+    private static func previewDate(_ date: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(date) { return "Today" }
+        if cal.isDateInTomorrow(date) { return "Tomorrow" }
+        let f = DateFormatter()
+        f.dateFormat = "EEE d MMM"
+        return f.string(from: date)
     }
 
     // MARK: - Filters
@@ -175,7 +238,7 @@ struct TodoView: View {
             // Plain VStack (not Lazy): the list is short and we need every row to
             // re-render on data changes (done toggles, date edits) without recycling.
             VStack(spacing: 0) {
-                ForEach(vault.filteredTasks) { task in
+                ForEach(vault.displayedTasks) { task in
                     taskRow(task)
                 }
                 if vault.hasVisibleCompleted {
@@ -344,8 +407,10 @@ private struct TaskRow: View {
                 .lineLimit(expanded ? nil : 1)
                 .help(task.text)
                 .contentShape(Rectangle())
-                .onTapGesture(count: 2) { beginEdit() }
+                // Single click expands instantly; the double click (edit) runs alongside it
+                // instead of making every single click wait to rule out a double click.
                 .onTapGesture { expanded.toggle() }
+                .simultaneousGesture(TapGesture(count: 2).onEnded { beginEdit() })
         }
     }
 

@@ -42,22 +42,32 @@ struct ContentView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            // Transient toast (copy confirmations, etc.)
+            // Transient toast (copy confirmations, etc.) — optionally with an Undo button
             if let toast = vault.toastMessage {
                 VStack {
                     Spacer()
-                    Text(toast)
-                        .font(.ui(12, weight: .semibold))
-                        .foregroundColor(theme.bg)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(theme.text)
-                        .cornerRadius(10)
-                        .shadow(color: Color.black.opacity(0.3), radius: 12, y: 4)
-                        .padding(.bottom, 16)
+                    HStack(spacing: 12) {
+                        Text(toast)
+                            .font(.ui(12, weight: .semibold))
+                            .foregroundColor(theme.bg)
+                        if vault.toastCanUndo {
+                            Button(action: { withAnimation(.easeOut(duration: 0.15)) { vault.undoTaskDeletion() } }) {
+                                Text("Undo")
+                                    .font(.ui(12, weight: .bold))
+                                    .foregroundColor(theme.accentBlueLt)
+                            }
+                            .buttonStyle(.hand)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(theme.text)
+                    .cornerRadius(10)
+                    .shadow(color: Color.black.opacity(0.3), radius: 12, y: 4)
+                    .padding(.bottom, 16)
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-                .allowsHitTesting(false)
+                .allowsHitTesting(vault.toastCanUndo)
             }
         }
         .ignoresSafeArea(.container, edges: .top)
@@ -278,8 +288,14 @@ struct VaultContainerView: View {
             // Left = Back, even if a search field still holds focus underneath. On
             // the plain list goBack() is a no-op, so the search cursor still works.
             if vault.selectedNoteID != nil { return event }                   // note editor
-            if vault.currentPanel == .notes && !vault.noteSearchText.isEmpty { return event } // typing in Notes search
-            if vault.isEditingItem { return event }                           // item edit form
+            if vault.isEditingItem || vault.hasUnsavedNewItem { return event } // item edit / add forms
+            // Typing in any field that has text (search, quick-add, task rename, Settings…):
+            // Left moves the cursor. Not over an open item detail, where the list search
+            // may still hold residual focus underneath.
+            if vault.selectedItemID == nil,
+               let editor = NSApp.keyWindow?.firstResponder as? NSTextView, !editor.string.isEmpty {
+                return event
+            }
             return vault.goBack() ? nil : event
         }
     }
@@ -386,7 +402,7 @@ struct VaultContainerView: View {
                     }
 
                     if settings.showTodoInTopBar {
-                        HeaderIconButton(systemName: "checklist", help: "To-Do") {
+                        HeaderIconButton(systemName: "checklist", help: "To-Do", badgeCount: vault.dueTaskCount) {
                             vault.openHeaderMenu = nil
                             vault.navigateToPanel(.todo)
                         }
@@ -416,7 +432,8 @@ struct VaultContainerView: View {
                         }
                     }
 
-                    HeaderIconButton(systemName: "ellipsis", help: "More", showAlert: !vault.flaggedItemIDs.isEmpty) {
+                    HeaderIconButton(systemName: "ellipsis", help: "More",
+                                     showAlert: !vault.flaggedItemIDs.isEmpty || (!settings.showTodoInTopBar && vault.dueTaskCount > 0)) {
                         toggleMenu(.more)
                     }
                     .background(anchorReporter(.more))
@@ -537,7 +554,8 @@ struct VaultContainerView: View {
                     }
                 }
                 if !settings.showTodoInTopBar {
-                    HeaderMenuItem(icon: "checklist", label: "To-Do") {
+                    HeaderMenuItem(icon: "checklist", label: "To-Do",
+                                   badge: vault.dueTaskCount == 0 ? nil : "\(vault.dueTaskCount)") {
                         selectMenu { vault.navigateToPanel(.todo) }
                     }
                 }
@@ -656,6 +674,8 @@ private struct HeaderIconButton: View {
     let systemName: String
     let help: String
     var showAlert: Bool = false
+    /// Small count bubble (e.g. due tasks); hidden at 0.
+    var badgeCount: Int = 0
     var isActive: Bool = false
     var activeColor: Color? = nil
     let action: () -> Void
@@ -675,7 +695,16 @@ private struct HeaderIconButton: View {
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(isActive ? tint : (hovering ? theme.text : theme.textMuted))
                     )
-                if showAlert {
+                if badgeCount > 0 {
+                    Text(badgeCount > 99 ? "99+" : "\(badgeCount)")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(theme.dropBg)
+                        .padding(.horizontal, 4)
+                        .frame(minWidth: 15, minHeight: 15)
+                        .background(Capsule().fill(theme.accentYellow))
+                        .overlay(Capsule().stroke(theme.dropBg, lineWidth: 1.5))
+                        .offset(x: 5, y: -4)
+                } else if showAlert {
                     Circle()
                         .fill(theme.accentYellow)
                         .frame(width: 7, height: 7)
