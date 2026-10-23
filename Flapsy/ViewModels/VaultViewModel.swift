@@ -74,6 +74,14 @@ enum SortOption: String, CaseIterable {
     case recentlyModified = "Modified"
 }
 
+/// "Save sachs.com to Goldman Sachs?" — offered after a password was copied from a
+/// login that doesn't match the browser site (the user found it by hand).
+struct SiteAliasOffer: Equatable {
+    let itemID: UUID
+    let itemName: String
+    let domain: String
+}
+
 final class VaultViewModel: ObservableObject {
     // MARK: - App State
     @Published var currentScreen: AppScreen = .lock
@@ -139,12 +147,31 @@ final class VaultViewModel: ObservableObject {
     @Published var searchText: String = ""
     /// Site of the browser tab Flapsy was opened from (nil if not opened from a supported browser).
     /// Stays set while the window is open, even if the user edits the search.
-    @Published var browserSite: BrowserSite? = nil
+    @Published var browserSite: BrowserSite? = nil {
+        didSet {
+            // New window session or different site: drop any pending "Save site?" offer
+            if browserSite != oldValue {
+                siteAliasOffer = nil
+                siteAliasOffersAsked = []
+            }
+        }
+    }
 
     /// True while the search still shows the browser site's domain (pre-filled, untouched).
     var isSiteSearch: Bool {
         guard let site = browserSite else { return false }
         return searchText == site.domain
+    }
+
+    /// The only login (with a password) found by an untouched site search — Return copies its password.
+    var readySiteMatch: VaultItem? { readySiteMatch(in: filteredItems) }
+
+    /// Same as `readySiteMatch`, for callers that already hold `filteredItems`.
+    func readySiteMatch(in results: [VaultItem]) -> VaultItem? {
+        guard isSiteSearch else { return nil }
+        let logins = results.filter { $0.type == .login }
+        guard logins.count == 1, let only = logins.first, !(only.password ?? "").isEmpty else { return nil }
+        return only
     }
     @Published var typeFilter: ItemType? = nil
     @Published var activeCategory: String = "all"
@@ -163,6 +190,11 @@ final class VaultViewModel: ObservableObject {
     // MARK: - Toast
     @Published var toastMessage: String? = nil
     private var toastWorkItem: DispatchWorkItem?
+
+    // MARK: - Learned Sites
+    @Published var siteAliasOffer: SiteAliasOffer? = nil
+    /// "itemID|domain" pairs already offered this window session (ask at most once).
+    private var siteAliasOffersAsked: Set<String> = []
 
     // MARK: - Header/list dropdown menu (shared so the list sort chip and header buttons coordinate)
     @Published var openHeaderMenu: HeaderMenuKind? = nil
@@ -846,7 +878,7 @@ final class VaultViewModel: ObservableObject {
         currentScreen = .lock
         selectedItemID = nil
         searchText = ""
-        browserSite = nil
+        browserSite = nil  // also clears any "Save site?" offer
         activeCategory = "all"
         typeFilter = nil
         currentPanel = .list
@@ -982,6 +1014,14 @@ final class VaultViewModel: ObservableObject {
         }
     }
 
+    /// Copies a login's password. If the login doesn't match the browser site (found by
+    /// hand after clearing the pre-filled domain), offers to remember the site for it.
+    func copyPassword(of item: VaultItem, fieldName: String) {
+        guard let password = item.password, !password.isEmpty else { return }
+        copyToClipboard(password, fieldName: fieldName)
+        offerSiteAliasIfNeeded(for: item)
+    }
+
     /// Shows a transient toast message, auto-dismissed after a short delay.
     /// Animation is applied at the view layer (see ContentView).
     func showToast(_ message: String) {
@@ -1008,6 +1048,51 @@ final class VaultViewModel: ObservableObject {
         if fieldName == "secretKey" { return "Secret key" }
         return "Value"
     }
+
+    // MARK: - Learned Sites
+
+    private func offerSiteAliasIfNeeded(for item: VaultItem) {
+        guard item.type == .login, let site = browserSite,
+              !SiteMatcher.matches(item, site: site) else { return }
+        let key = "\(item.id)|\(site.domain)"
+        guard !siteAliasOffersAsked.contains(key) else { return }
+        siteAliasOffersAsked.insert(key)
+        siteAliasOffer = SiteAliasOffer(itemID: item.id, itemName: item.name, domain: site.domain)
+    }
+
+    func acceptSiteAliasOffer() {
+        guard let offer = siteAliasOffer else { return }
+        siteAliasOffer = nil
+        if addSiteAlias(offer.domain, to: offer.itemID) {
+            showToast("Saved \(offer.domain) to \(offer.itemName)")
+        }
+    }
+
+    func dismissSiteAliasOffer() {
+        siteAliasOffer = nil
+    }
+
+    /// Adds a learned domain to a login. Leaves `modifiedAt` alone — it drives
+    /// password-age warnings and the "Modified" sort.
+    @discardableResult
+    func addSiteAlias(_ domain: String, to id: UUID) -> Bool {
+        let domain = domain.lowercased()
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return false }
+        var aliases = items[index].siteAliases ?? []
+        guard !aliases.contains(where: { $0.lowercased() == domain }) else { return false }
+        aliases.append(domain)
+        items[index].siteAliases = aliases
+        return true
+    }
+
+    func removeSiteAlias(_ domain: String, from id: UUID) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        let remaining = (items[index].siteAliases ?? []).filter { $0.lowercased() != domain.lowercased() }
+        items[index].siteAliases = remaining.isEmpty ? nil : remaining
+        showToast("Removed \(domain)")
+    }
+
+    // MARK: - Add New Item
 
     func saveNewItem() {
         guard canSaveNewItem else { return }
@@ -1051,6 +1136,56 @@ final class VaultViewModel: ObservableObject {
         newNoteText = ""
         newTotpSecret = ""
         newLoginNotes = ""
+    }
+
+    /// Opens the add form as a login pre-filled for the browser site ("Add login for sachs.com").
+    func addLoginForBrowserSite() {
+        guard let site = browserSite else { return }
+        let category = activeCategory
+        navigateToPanel(.addNew)  // resets the form, so pre-fill after
+        newType = .login
+        newUrl = "https://\(site.host)"
+        newName = Self.suggestedLoginName(for: site)
+        if categoryFor(key: category) != nil { newCategory = category }
+    }
+
+    /// Hosted platforms where the subdomain names the account ("acme.atlassian.net").
+    private static let multiTenantDomains = [
+        "atlassian.net", "slack.com", "zendesk.com", "freshdesk.com", "sharepoint.com",
+        "myshopify.com", "okta.com", "my.salesforce.com", "lightning.force.com", "service-now.com",
+        "github.io", "gitlab.io", "herokuapp.com", "netlify.app", "vercel.app", "notion.site",
+        "webflow.io", "wordpress.com", "substack.com", "monday.com", "harvestapp.com",
+    ]
+
+    /// Labels that never name a site ("login.sachs.com" is "Sachs", not "Login").
+    private static let genericHostLabels: Set<String> = [
+        "www", "login", "signin", "auth", "account", "accounts", "secure", "my", "app",
+        "portal", "sso", "id", "online", "web", "m",
+    ]
+
+    /// "goldmansachs.com" → "Goldmansachs"; "acme.atlassian.net" → "Acme (Atlassian)".
+    static func suggestedLoginName(for site: BrowserSite) -> String {
+        let host = site.host.lowercased()
+        func titled(_ label: String) -> String {
+            label.split(separator: "-").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
+        }
+
+        // IP addresses and single-label hosts (localhost) have no name to derive
+        if host.allSatisfy({ $0.isNumber || $0 == "." || $0 == ":" }) || !host.contains(".") {
+            return host
+        }
+
+        if let platform = multiTenantDomains.first(where: { host.hasSuffix(".\($0)") }) {
+            let tenantLabels = host.dropLast(platform.count + 1).split(separator: ".").map(String.init)
+            if let tenant = tenantLabels.last(where: { !genericHostLabels.contains($0) }) {
+                let platformLabel = platform.split(separator: ".").map(String.init)
+                    .first(where: { !genericHostLabels.contains($0) }) ?? platform
+                return "\(titled(tenant)) (\(titled(platformLabel)))"
+            }
+        }
+
+        let main = site.domain.lowercased().split(separator: ".").first.map(String.init) ?? host
+        return titled(main)
     }
 
     // MARK: - To-Do (standalone To-Do mini-app)

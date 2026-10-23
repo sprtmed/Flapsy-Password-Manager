@@ -31,6 +31,17 @@ struct ContentView: View {
                     .transition(.opacity)
             }
 
+            // "Save sachs.com to Goldman Sachs?" — non-modal, sits above the toast
+            if vault.currentScreen == .vault, let offer = vault.siteAliasOffer {
+                VStack {
+                    Spacer()
+                    SiteAliasOfferBar(offer: offer)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, vault.toastMessage == nil ? 16 : 62)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
             // Transient toast (copy confirmations, etc.)
             if let toast = vault.toastMessage {
                 VStack {
@@ -55,6 +66,63 @@ struct ContentView: View {
         .font(.system(.body))
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.currentScreen)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vault.toastMessage)
+        // Animate the offer in; a reset on window reopen/lock removes it instantly
+        .animation(vault.siteAliasOffer == nil ? nil : .spring(response: 0.3, dampingFraction: 0.8), value: vault.siteAliasOffer)
+    }
+}
+
+// MARK: - Site Alias Offer
+
+/// Small bottom card offering to remember the browser site for a login whose
+/// password the user just copied after finding it by hand.
+private struct SiteAliasOfferBar: View {
+    let offer: SiteAliasOffer
+    @EnvironmentObject var vault: VaultViewModel
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "globe")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(theme.accentBlueLt)
+            (Text("Save ") + Text(offer.domain).bold() + Text(" to ") + Text(offer.itemName).bold() + Text("?"))
+                .font(.ui(12))
+                .foregroundColor(theme.text)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button(action: { withAnimation(.easeOut(duration: 0.15)) { vault.acceptSiteAliasOffer() } }) {
+                Text("Save")
+                    .font(.ui(11, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(theme.accentBlue)
+                    .cornerRadius(7)
+            }
+            .buttonStyle(.hand)
+            Button(action: { withAnimation(.easeOut(duration: 0.15)) { vault.dismissSiteAliasOffer() } }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(theme.textMuted)
+                    .frame(width: 26, height: 26)
+                    .background(theme.fieldBg)
+                    .cornerRadius(7)
+            }
+            .buttonStyle(.hand)
+            .help("Not now")
+        }
+        .padding(.leading, 12)
+        .padding(.trailing, 6)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(theme.cardBg)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(theme.cardBorder, lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 3)
+        )
     }
 }
 

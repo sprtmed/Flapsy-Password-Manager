@@ -8,6 +8,8 @@ struct VaultListView: View {
 
     @FocusState private var isSearchFieldFocused: Bool
     @State private var keyMonitor: Any?
+    /// Arrow-key navigation opts out of "Return copies the ready site match" until the search changes.
+    @State private var movedSelectionWithArrows = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,6 +43,8 @@ struct VaultListView: View {
                 vault.isSearchFocused = false
             }
         }
+        .onChange(of: vault.searchText) { _ in movedSelectionWithArrows = false }
+        .onChange(of: vault.browserSite) { _ in movedSelectionWithArrows = false }
     }
 
     // MARK: - Keyboard Navigation
@@ -52,14 +56,20 @@ struct VaultListView: View {
 
             switch Int(event.keyCode) {
             case 125: // Down arrow
+                movedSelectionWithArrows = true
                 navigateList(direction: 1)
                 return nil
             case 126: // Up arrow
+                movedSelectionWithArrows = true
                 navigateList(direction: -1)
                 return nil
             case 36: // Return/Enter
                 if vault.isEditingItem { return event }
-                if vault.selectedItemID != nil {
+                if vault.selectedItemID == nil, !movedSelectionWithArrows,
+                   let ready = vault.readySiteMatch {
+                    // One login for the browser site: Return copies its password
+                    vault.copyPassword(of: ready, fieldName: "qa-pass-\(ready.id)")
+                } else if vault.selectedItemID != nil {
                     withAnimation(.easeInOut(duration: 0.15)) {
                         vault.selectedItemID = nil
                         vault.showPassword = false
@@ -286,22 +296,89 @@ struct VaultListView: View {
     // MARK: - Item List
 
     private var itemList: some View {
-        ScrollView {
+        let items = vault.filteredItems
+        let readyID = movedSelectionWithArrows ? nil : vault.readySiteMatch(in: items)?.id
+        return ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(vault.filteredItems) { item in
-                    VaultItemRow(item: item, searchQuery: vault.searchText)
+                ForEach(items) { item in
+                    VaultItemRow(item: item, searchQuery: vault.searchText, isReady: item.id == readyID)
                 }
-                if vault.filteredItems.isEmpty {
-                    Text("No items found")
-                        .font(.ui(12))
-                        .foregroundColor(theme.textFaint)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 30)
+                if items.isEmpty {
+                    if vault.isSiteSearch, let site = vault.browserSite {
+                        siteEmptyState(site)
+                    } else {
+                        Text("No items found")
+                            .font(.ui(12))
+                            .foregroundColor(theme.textFaint)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 30)
+                    }
                 }
             }
         }
         .frame(maxHeight: .infinity)
         .layoutPriority(1)
+    }
+
+    // MARK: - Browser Site Empty State
+
+    private var hasActiveFilters: Bool {
+        vault.typeFilter != nil || vault.activeCategory != "all" || vault.showFavoritesOnly
+    }
+
+    /// Nothing matches the pre-filled browser domain: offer to add a login for it —
+    /// or, if the type/category/favorites filters are hiding matches, to show them.
+    @ViewBuilder
+    private func siteEmptyState(_ site: BrowserSite) -> some View {
+        let hiddenMatches = hasActiveFilters
+            ? vault.activeItems.filter { $0.type == .login && SiteMatcher.matches($0, site: site) }.count
+            : 0
+
+        VStack(spacing: 10) {
+            if hiddenMatches > 0 {
+                Text("No matches for \(site.domain) in this view")
+                    .font(.ui(12))
+                    .foregroundColor(theme.textFaint)
+                siteEmptyStateButton(
+                    icon: "line.3.horizontal.decrease.circle",
+                    label: hiddenMatches == 1 ? "Show 1 match in all items" : "Show \(hiddenMatches) matches in all items"
+                ) {
+                    vault.typeFilter = nil
+                    vault.activeCategory = "all"
+                    vault.showFavoritesOnly = false
+                    vault.selectedItemID = nil
+                }
+            } else {
+                Text("No logins for \(site.domain)")
+                    .font(.ui(12))
+                    .foregroundColor(theme.textFaint)
+                siteEmptyStateButton(icon: "plus", label: "Add login for \(site.domain)") {
+                    vault.addLoginForBrowserSite()
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 30)
+    }
+
+    private func siteEmptyStateButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                Text(label)
+                    .font(.ui(12, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .foregroundColor(theme.accentBlueLt)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(theme.pillBg)
+            .cornerRadius(8)
+        }
+        .buttonStyle(.hand)
     }
 
     // MARK: - Footer
@@ -361,6 +438,8 @@ struct VaultListView: View {
 struct VaultItemRow: View {
     let item: VaultItem
     var searchQuery: String = ""
+    /// The only login for the browser site: highlighted, and Return copies its password.
+    var isReady: Bool = false
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
 
@@ -414,9 +493,16 @@ struct VaultItemRow: View {
             .buttonStyle(.hand)
 
             VStack(alignment: .trailing, spacing: 3) {
-                Text(item.lastUsedDisplay)
-                    .font(.mono(10))
-                    .foregroundColor(theme.textFaint)
+                if isReady {
+                    let copied = vault.copiedField == "qa-pass-\(item.id)"
+                    Text(copied ? "\u{2713} copied" : "\u{21A9} copy password")
+                        .font(.mono(10, weight: .semibold))
+                        .foregroundColor(copied ? theme.accentGreen : theme.accentBlueLt)
+                } else {
+                    Text(item.lastUsedDisplay)
+                        .font(.mono(10))
+                        .foregroundColor(theme.textFaint)
+                }
 
                 if item.type == .login, let password = item.password {
                     let strength = PasswordStrength.calculate(password)
@@ -434,10 +520,10 @@ struct VaultItemRow: View {
         }
         .padding(.vertical, 9)
         .padding(.horizontal, 16)
-        .background(isSelected ? theme.activeBg : (isHovered ? theme.hoverBg : Color.clear))
+        .background(isSelected ? theme.activeBg : (isHovered ? theme.hoverBg : (isReady ? theme.accentBlue.opacity(0.08) : Color.clear)))
         .overlay(alignment: .leading) {
             Rectangle()
-                .fill(isSelected ? theme.accentBlue : Color.clear)
+                .fill(isSelected || isReady ? theme.accentBlue : Color.clear)
                 .frame(width: 2)
         }
         .overlay(alignment: .trailing) {
@@ -493,7 +579,7 @@ struct VaultItemRow: View {
                 }
                 if hasPassword {
                     QuickIconButton(copied: vault.copiedField == "qa-pass-\(item.id)", icon: "key", help: "Copy password") {
-                        vault.copyToClipboard(item.password!, fieldName: "qa-pass-\(item.id)")
+                        vault.copyPassword(of: item, fieldName: "qa-pass-\(item.id)")
                     }
                 }
                 if hasURL {
