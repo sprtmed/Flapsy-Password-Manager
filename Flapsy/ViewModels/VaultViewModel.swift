@@ -346,7 +346,7 @@ final class VaultViewModel: ObservableObject {
             let nameContains = nameLower.contains(query)
             let userContains = userLower.contains(query)
             let noteContains = noteLower.contains(query)
-            // Website match only for domain-like queries ("sachs.com"), so short words don't match every URL
+            // Site match only for domain-like queries ("sachs.com"): website/alias/equivalent/name tiers (see SiteMatcher.MatchKind)
             let siteScore = SiteMatcher.score(item, query: query, browserHost: isSiteSearch ? browserSite?.host : nil)
 
             if nameContains || userContains || noteContains || siteScore != nil {

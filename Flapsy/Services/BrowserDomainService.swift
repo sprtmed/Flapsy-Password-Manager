@@ -72,12 +72,16 @@ final class BrowserDomainService {
         }
     }
 
-    /// "https://login.sachs.com/path" → BrowserSite(host: "login.sachs.com", domain: "sachs.com").
+    /// "https://login.sachs.com/path" → BrowserSite(host: "login.sachs.com", domain: "sachs.com");
+    /// "https://jira.acme.atlassian.net" → domain "acme.atlassian.net" (multi-tenant platforms keep the tenant).
     /// Returns nil for non-web pages (new tab, about:blank, file://, favorites://).
     static func site(fromURL string: String) -> BrowserSite? {
         guard let url = URL(string: string),
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
-              let host = url.host?.lowercased(), !host.isEmpty else { return nil }
+              var host = url.host?.lowercased() else { return nil }
+        // "example.com." (fully qualified) is the same site as "example.com"
+        while host.hasSuffix(".") { host.removeLast() }
+        guard !host.isEmpty else { return nil }
         return BrowserSite(host: host, domain: SiteMatcher.registrableDomain(forHost: host))
     }
 }
