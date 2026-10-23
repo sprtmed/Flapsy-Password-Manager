@@ -1149,14 +1149,6 @@ final class VaultViewModel: ObservableObject {
         if categoryFor(key: category) != nil { newCategory = category }
     }
 
-    /// Hosted platforms where the subdomain names the account ("acme.atlassian.net").
-    private static let multiTenantDomains = [
-        "atlassian.net", "slack.com", "zendesk.com", "freshdesk.com", "sharepoint.com",
-        "myshopify.com", "okta.com", "my.salesforce.com", "lightning.force.com", "service-now.com",
-        "github.io", "gitlab.io", "herokuapp.com", "netlify.app", "vercel.app", "notion.site",
-        "webflow.io", "wordpress.com", "substack.com", "monday.com", "harvestapp.com",
-    ]
-
     /// Labels that never name a site ("login.sachs.com" is "Sachs", not "Login").
     private static let genericHostLabels: Set<String> = [
         "www", "login", "signin", "auth", "account", "accounts", "secure", "my", "app",
@@ -1175,7 +1167,8 @@ final class VaultViewModel: ObservableObject {
             return host
         }
 
-        if let platform = multiTenantDomains.first(where: { host.hasSuffix(".\($0)") }) {
+        // Multi-tenant platforms ("acme.atlassian.net"); the list is sorted longest suffix first
+        if let platform = SiteMatcher.multiTenantSuffixes.first(where: { host.hasSuffix(".\($0)") }) {
             let tenantLabels = host.dropLast(platform.count + 1).split(separator: ".").map(String.init)
             if let tenant = tenantLabels.last(where: { !genericHostLabels.contains($0) }) {
                 let platformLabel = platform.split(separator: ".").map(String.init)
