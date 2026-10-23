@@ -137,6 +137,15 @@ final class VaultViewModel: ObservableObject {
 
     // MARK: - Search & Filters
     @Published var searchText: String = ""
+    /// Site of the browser tab Flapsy was opened from (nil if not opened from a supported browser).
+    /// Stays set while the window is open, even if the user edits the search.
+    @Published var browserSite: BrowserSite? = nil
+
+    /// True while the search still shows the browser site's domain (pre-filled, untouched).
+    var isSiteSearch: Bool {
+        guard let site = browserSite else { return false }
+        return searchText == site.domain
+    }
     @Published var typeFilter: ItemType? = nil
     @Published var activeCategory: String = "all"
     @Published var showFavoritesOnly: Bool = false
@@ -337,14 +346,14 @@ final class VaultViewModel: ObservableObject {
             let nameContains = nameLower.contains(query)
             let userContains = userLower.contains(query)
             let noteContains = noteLower.contains(query)
-            // URL only for domain-like queries ("sachs.com"), so short words don't match every URL
-            let urlContains = query.contains(".") && (item.url ?? "").lowercased().contains(query)
+            // Website match only for domain-like queries ("sachs.com"), so short words don't match every URL
+            let siteScore = SiteMatcher.score(item, query: query, browserHost: isSiteSearch ? browserSite?.host : nil)
 
-            if nameContains || userContains || noteContains || urlContains {
+            if nameContains || userContains || noteContains || siteScore != nil {
                 var score = 100
                 if nameLower.hasPrefix(query) { score += 50 }
                 else if nameContains { score += 25 }
-                if urlContains { score += 20 }
+                if let siteScore = siteScore { score += siteScore }
                 if userContains { score += 10 }
                 if noteContains { score += 5 }
                 return (item, score)
@@ -837,6 +846,7 @@ final class VaultViewModel: ObservableObject {
         currentScreen = .lock
         selectedItemID = nil
         searchText = ""
+        browserSite = nil
         activeCategory = "all"
         typeFilter = nil
         currentPanel = .list

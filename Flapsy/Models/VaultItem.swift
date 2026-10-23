@@ -33,6 +33,8 @@ struct VaultItem: Codable, Identifiable {
     var password: String?
     var totpSecret: String?
     var loginNotes: String?
+    /// Extra domains learned for this login ("Save sachs.com to this login?"), matched like `url`.
+    var siteAliases: [String]? = nil
 
     // Card fields
     var cardType: String?

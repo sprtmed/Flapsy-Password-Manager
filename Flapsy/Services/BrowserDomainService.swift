@@ -4,6 +4,14 @@ import os.log
 
 private let logger = Logger(subsystem: "com.knox.app", category: "BrowserDomain")
 
+/// The website the user was on when they opened Flapsy.
+struct BrowserSite: Equatable {
+    /// Full host of the active tab, e.g. "login.goldmansachs.com".
+    let host: String
+    /// Domain used for search, e.g. "goldmansachs.com".
+    let domain: String
+}
+
 /// Reads the domain of the active tab in the frontmost browser via Apple Events,
 /// so the vault search can be pre-filled with it. macOS asks the user once per
 /// browser ("Flapsy wants to control Safari"); if denied, lookups just return nil.
@@ -23,11 +31,6 @@ final class BrowserDomainService {
         "company.thebrowser.Browser": "URL of active tab of front window",
     ]
 
-    /// Second-level labels that form part of a country-code public suffix (e.g. co.uk, com.au).
-    private static let secondLevelSuffixes: Set<String> = [
-        "co", "com", "org", "net", "gov", "ac", "edu", "ltd", "plc", "ne", "or", "go",
-    ]
-
     /// Apple Events block until the target replies (and on first use until the user
     /// answers the consent prompt), so scripts run off the main thread, one at a time.
     private let queue = DispatchQueue(label: "com.knox.app.browser-domain")
@@ -40,9 +43,9 @@ final class BrowserDomainService {
         return Self.supportedBrowsers[id] != nil
     }
 
-    /// Asynchronously fetches the active tab's domain from `app`.
-    /// Calls `completion` on the main thread with e.g. "sachs.com", or nil.
-    func fetchDomain(from app: NSRunningApplication?, completion: @escaping (String?) -> Void) {
+    /// Asynchronously fetches the active tab's site from `app`.
+    /// Calls `completion` on the main thread with the site, or nil.
+    func fetchSite(from app: NSRunningApplication?, completion: @escaping (BrowserSite?) -> Void) {
         guard let bundleID = app?.bundleIdentifier,
               let urlPath = Self.supportedBrowsers[bundleID] else {
             completion(nil)
@@ -64,27 +67,17 @@ final class BrowserDomainService {
             if let error = error {
                 logger.info("Browser URL lookup failed: \(error[NSAppleScript.errorNumber] as? Int ?? 0, privacy: .public)")
             }
-            let domain = result?.stringValue.flatMap(Self.domain(fromURL:))
-            DispatchQueue.main.async { completion(domain) }
+            let site = result?.stringValue.flatMap(Self.site(fromURL:))
+            DispatchQueue.main.async { completion(site) }
         }
     }
 
-    /// "https://login.www.sachs.com/path" → "sachs.com"; "https://my.bank.co.uk" → "bank.co.uk".
+    /// "https://login.sachs.com/path" → BrowserSite(host: "login.sachs.com", domain: "sachs.com").
     /// Returns nil for non-web pages (new tab, about:blank, file://, favorites://).
-    static func domain(fromURL string: String) -> String? {
+    static func site(fromURL string: String) -> BrowserSite? {
         guard let url = URL(string: string),
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
               let host = url.host?.lowercased(), !host.isEmpty else { return nil }
-
-        // IP addresses and single-label hosts (localhost) are used as-is
-        if host.allSatisfy({ $0.isNumber || $0 == "." || $0 == ":" }) || !host.contains(".") {
-            return host
-        }
-
-        let labels = host.split(separator: ".").map(String.init)
-        guard labels.count > 2 else { return host }
-
-        let keep = (labels[labels.count - 1].count == 2 && secondLevelSuffixes.contains(labels[labels.count - 2])) ? 3 : 2
-        return labels.suffix(keep).joined(separator: ".")
+        return BrowserSite(host: host, domain: SiteMatcher.registrableDomain(forHost: host))
     }
 }

@@ -10,8 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var localKeyMonitor: Any?
     private var hotKeyRef: EventHotKeyRef?
     private var cancellables = Set<AnyCancellable>()
-    /// Browser domain fetched while the vault was locked; applied to search after unlock.
-    private var pendingBrowserDomain: String?
+    /// Browser site fetched while the vault was locked; applied to search after unlock.
+    private var pendingBrowserSite: BrowserSite?
 
     // Shared state injected into SwiftUI
     let vaultViewModel = VaultViewModel()
@@ -56,12 +56,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self = self else { return }
                 if isUnlocked {
                     self.startAutoLockIfEnabled()
-                    if let domain = self.pendingBrowserDomain {
-                        self.pendingBrowserDomain = nil
+                    if let site = self.pendingBrowserSite {
+                        self.pendingBrowserSite = nil
                         // Let the list panel appear and focus its search field first
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                             guard let self = self, self.window.isVisible else { return }
-                            self.applySearchDomain(domain)
+                            self.applySearchSite(site)
                         }
                     }
                 } else {
@@ -194,6 +194,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Capture the app the user came from before we activate ourselves
             let sourceApp = NSWorkspace.shared.frontmostApplication
 
+            // Forget the previous site; it's re-detected below if the setting is on
+            vaultViewModel.browserSite = nil
+            pendingBrowserSite = nil
+
             // Reset runtime pin state to the persisted default each time window opens
             settingsViewModel.isWindowPinned = settingsViewModel.keepWindowOpen
             positionWindowBelowStatusItem()
@@ -216,29 +220,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Pre-fill Search From Browser
 
     private func prefillSearchFromBrowser(_ app: NSRunningApplication?) {
-        pendingBrowserDomain = nil
         guard BrowserDomainService.shared.isSupportedBrowser(app) else { return }
 
         let searchAtRequest = vaultViewModel.searchText
-        BrowserDomainService.shared.fetchDomain(from: app) { [weak self] domain in
-            guard let self = self, let domain = domain, self.window.isVisible else { return }
+        BrowserDomainService.shared.fetchSite(from: app) { [weak self] site in
+            guard let self = self, let site = site, self.window.isVisible else { return }
             if self.vaultViewModel.isUnlocked {
-                // Don't overwrite anything the user typed while the lookup ran
+                // Remember the site even if the user already typed, but don't overwrite their text
+                self.vaultViewModel.browserSite = site
                 guard self.vaultViewModel.searchText == searchAtRequest else { return }
-                self.applySearchDomain(domain)
+                self.applySearchSite(site)
             } else {
-                self.pendingBrowserDomain = domain
+                self.pendingBrowserSite = site
             }
         }
     }
 
-    private func applySearchDomain(_ domain: String) {
+    private func applySearchSite(_ site: BrowserSite) {
+        vaultViewModel.browserSite = site
         guard vaultViewModel.currentPanel == .list else { return }
-        vaultViewModel.searchText = domain
+        vaultViewModel.searchText = site.domain
 
         // Select the pre-filled text so typing replaces it
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            if let editor = self?.window.firstResponder as? NSTextView, editor.string == domain {
+            if let editor = self?.window.firstResponder as? NSTextView, editor.string == site.domain {
                 editor.selectAll(nil)
             }
         }
