@@ -137,9 +137,12 @@ final class VaultViewModel: ObservableObject {
     @Published var noteTags: [VaultCategory] = []
     @Published var selectedNoteID: UUID? = nil
     @Published var noteSearchText: String = ""
-    @Published var showNoteSearch: Bool = false
+    /// Set to true to focus the Notes list search field (consumed by NotesView).
+    @Published var isNoteSearchFocused: Bool = false
     @Published var activeNoteTag: String = "all"
     @Published var showNoteFavoritesOnly: Bool = false
+    /// Notes list order (same options as the vault list). Default: last edited first.
+    @Published var noteSortOption: SortOption = .recentlyModified
     @Published var newNoteTagName: String = ""
     @Published var newNoteTagColor: String = VaultCategory.availableColors[0]
 
@@ -340,6 +343,16 @@ final class VaultViewModel: ObservableObject {
     var trashedItems: [VaultItem] {
         items.filter { $0.deletedAt != nil }
             .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+    }
+
+    var trashedNotes: [Note] {
+        notes.filter { $0.deletedAt != nil }
+            .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+    }
+
+    /// Deleted items + deleted notes, for the Trash badge.
+    var trashCount: Int {
+        items.filter { $0.deletedAt != nil }.count + notes.filter { $0.deletedAt != nil }.count
     }
 
     var filteredItems: [VaultItem] {
@@ -890,7 +903,6 @@ final class VaultViewModel: ObservableObject {
         tasks = []
         selectedNoteID = nil
         noteSearchText = ""
-        showNoteSearch = false
         activeNoteTag = "all"
         showNoteFavoritesOnly = false
         masterPasswordInput = ""
@@ -982,6 +994,7 @@ final class VaultViewModel: ObservableObject {
             }
 
         setupHealthMonitor()
+        migrateSecureNotesToNotes()
         purgeExpiredTrash()
         SecretKeyService.shared.migrateToSecureEnclaveIfNeeded()
         runBreachCheck()
@@ -1372,9 +1385,14 @@ final class VaultViewModel: ObservableObject {
     // MARK: - Notes (standalone Notes mini-app)
 
     /// Notes after applying the active tag + favorites filters, sorted with
-    /// starred notes pinned to the top, then newest-edited first.
+    /// starred notes pinned to the top, then by `noteSortOption`.
+    /// Notes not in the Trash.
+    var activeNotes: [Note] {
+        notes.filter { $0.deletedAt == nil }
+    }
+
     private var sortedVisibleNotes: [Note] {
-        notes
+        activeNotes
             .filter { note in
                 let matchesTag = activeNoteTag == "all" || note.tag == activeNoteTag
                 let matchesFavorite = !showNoteFavoritesOnly || note.isFavorite
@@ -1382,7 +1400,18 @@ final class VaultViewModel: ObservableObject {
             }
             .sorted { a, b in
                 if a.isFavorite != b.isFavorite { return a.isFavorite }
-                return a.modifiedAt > b.modifiedAt
+                switch noteSortOption {
+                case .nameAsc:
+                    return a.displayTitle.localizedCaseInsensitiveCompare(b.displayTitle) == .orderedAscending
+                case .nameDesc:
+                    return a.displayTitle.localizedCaseInsensitiveCompare(b.displayTitle) == .orderedDescending
+                case .newestFirst:
+                    return a.createdAt > b.createdAt
+                case .oldestFirst:
+                    return a.createdAt < b.createdAt
+                case .recentlyModified:
+                    return a.modifiedAt > b.modifiedAt
+                }
             }
     }
 
@@ -1403,25 +1432,56 @@ final class VaultViewModel: ObservableObject {
         guard !query.isEmpty else {
             return sorted.map { NoteListEntry(note: $0, prefix: $0.previewSubtitle, match: "", suffix: "") }
         }
-        let lowerQuery = query.lowercased()
-        return sorted.compactMap { note -> NoteListEntry? in
-            let body = note.body
-            guard let range = body.lowercased().range(of: lowerQuery) else { return nil }
+        return sorted.compactMap { Self.noteSearchEntry($0, query: query) }
+    }
 
-            let contextChars = 30
-            let beforeCount = body.distance(from: body.startIndex, to: range.lowerBound)
-            let afterCount = body.distance(from: range.upperBound, to: body.endIndex)
-            let lower = body.index(range.lowerBound, offsetBy: -min(contextChars, beforeCount))
-            let upper = body.index(range.upperBound, offsetBy: min(contextChars, afterCount))
+    /// A list row for `note` with a snippet around the first match of `query`, or nil if it doesn't match.
+    static func noteSearchEntry(_ note: Note, query: String) -> NoteListEntry? {
+        let body = note.body
+        guard let range = body.lowercased().range(of: query.lowercased()) else { return nil }
 
-            var prefix = String(body[lower..<range.lowerBound]).replacingOccurrences(of: "\n", with: " ")
-            let match = String(body[range])
-            var suffix = String(body[range.upperBound..<upper]).replacingOccurrences(of: "\n", with: " ")
-            if lower != body.startIndex { prefix = "\u{2026}" + prefix }
-            if upper != body.endIndex { suffix += "\u{2026}" }
+        let contextChars = 30
+        let beforeCount = body.distance(from: body.startIndex, to: range.lowerBound)
+        let afterCount = body.distance(from: range.upperBound, to: body.endIndex)
+        let lower = body.index(range.lowerBound, offsetBy: -min(contextChars, beforeCount))
+        let upper = body.index(range.upperBound, offsetBy: min(contextChars, afterCount))
 
-            return NoteListEntry(note: note, prefix: prefix, match: match, suffix: suffix)
-        }
+        var prefix = String(body[lower..<range.lowerBound]).replacingOccurrences(of: "\n", with: " ")
+        let match = String(body[range])
+        var suffix = String(body[range.upperBound..<upper]).replacingOccurrences(of: "\n", with: " ")
+        if lower != body.startIndex { prefix = "\u{2026}" + prefix }
+        if upper != body.endIndex { suffix += "\u{2026}" }
+
+        return NoteListEntry(note: note, prefix: prefix, match: match, suffix: suffix)
+    }
+
+    /// Notes matching the main vault search, shown below the item results. Hidden while a
+    /// category or type filter is active (notes have neither); respects the favorites filter.
+    var vaultSearchNoteEntries: [NoteListEntry] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty, activeCategory == "all", typeFilter == nil else { return [] }
+        return activeNotes
+            .filter { !showFavoritesOnly || $0.isFavorite }
+            .sorted { a, b in
+                if a.isFavorite != b.isFavorite { return a.isFavorite }
+                return a.modifiedAt > b.modifiedAt
+            }
+            .compactMap { Self.noteSearchEntry($0, query: query) }
+    }
+
+    /// Opens a note from the main vault search results.
+    func openNoteFromVaultSearch(_ id: UUID) {
+        navigateToPanel(.notes)
+        selectedNoteID = id
+    }
+
+    /// Opens Notes filtered by the current vault search ("Show all in Notes").
+    func showVaultSearchInNotes() {
+        let query = searchText
+        activeNoteTag = "all"
+        showNoteFavoritesOnly = showFavoritesOnly
+        navigateToPanel(.notes)
+        noteSearchText = query
     }
 
     var selectedNote: Note? {
@@ -1506,15 +1566,78 @@ final class VaultViewModel: ObservableObject {
         notes[idx].modifiedAt = Date()
     }
 
+    /// Moves a note to the Trash (restorable for 30 days).
     func deleteNote(_ id: UUID) {
+        if let idx = notes.firstIndex(where: { $0.id == id }) {
+            notes[idx].deletedAt = Date()
+        }
+        if selectedNoteID == id { selectedNoteID = nil }
+    }
+
+    func restoreNote(_ id: UUID) {
+        if let idx = notes.firstIndex(where: { $0.id == id }) {
+            notes[idx].deletedAt = nil
+        }
+    }
+
+    func permanentlyDeleteNote(_ id: UUID) {
         notes.removeAll { $0.id == id }
         if selectedNoteID == id { selectedNoteID = nil }
     }
 
-    /// Discards a note if the user opened a fresh blank one and never typed anything.
+    /// Discards a note if the user opened a fresh blank one and never typed anything
+    /// (permanently — an empty note isn't worth a Trash entry).
     func discardNoteIfEmpty(_ id: UUID) {
         guard let note = notes.first(where: { $0.id == id }), note.isEffectivelyEmpty else { return }
-        deleteNote(id)
+        permanentlyDeleteNote(id)
+    }
+
+    /// Moves legacy secure notes (`VaultItem` type `.note`) into the Notes app, once.
+    /// Name becomes the first line, category becomes a note tag (created if needed),
+    /// favorite/dates/trash state carry over. Skips notes whose text already exists in
+    /// Notes (e.g. re-importing a backup). Runs after unlock and after imports.
+    func migrateSecureNotesToNotes() {
+        let secureNotes = items.filter { $0.type == .note }
+        guard !secureNotes.isEmpty else { return }
+
+        let existingBodies = Set(notes.map { $0.body.trimmingCharacters(in: .whitespacesAndNewlines) })
+        var migrated: [Note] = []
+        for item in secureNotes {
+            let title = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let text = (item.noteText ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let body: String
+            if title.isEmpty || text.hasPrefix(title) { body = text.isEmpty ? title : text }
+            else if text.isEmpty { body = title }
+            else { body = title + "\n" + text }
+
+            guard !body.isEmpty, !existingBodies.contains(body) else { continue }
+            migrated.append(Note(
+                id: item.id, body: body, isFavorite: item.isFavorite,
+                tag: noteTagKey(forItemCategory: item.category),
+                createdAt: item.createdAt, modifiedAt: item.modifiedAt, deletedAt: item.deletedAt
+            ))
+        }
+
+        notes.insert(contentsOf: migrated.sorted { $0.modifiedAt > $1.modifiedAt }, at: 0)
+        items.removeAll { $0.type == .note }
+        persistVault()
+
+        let moved = migrated.filter { $0.deletedAt == nil }.count
+        if moved > 0 {
+            showToast("Moved \(moved) secure note\(moved == 1 ? "" : "s") to Notes")
+        }
+        logger.info("Migrated \(migrated.count, privacy: .public) secure notes to Notes")
+    }
+
+    /// Note tag matching a vault category (same key), copying the category into the
+    /// note tags if needed. nil if the category no longer exists, or for the default
+    /// "personal" category (every new/imported item gets it, so it would tag everything).
+    private func noteTagKey(forItemCategory key: String) -> String? {
+        guard key != "personal" else { return nil }
+        if noteTags.contains(where: { $0.key == key }) { return key }
+        guard let category = categoryFor(key: key) else { return nil }
+        noteTags.append(VaultCategory(key: category.key, label: category.label, color: category.color))
+        return key
     }
 
     // MARK: - Category Management
@@ -1574,12 +1697,17 @@ final class VaultViewModel: ObservableObject {
 
     func emptyTrash() {
         items.removeAll { $0.deletedAt != nil }
+        notes.removeAll { $0.deletedAt != nil }
     }
 
     func purgeExpiredTrash() {
         let cutoff = Date().addingTimeInterval(-30 * 24 * 60 * 60)
         items.removeAll { item in
             if let deletedAt = item.deletedAt, deletedAt < cutoff { return true }
+            return false
+        }
+        notes.removeAll { note in
+            if let deletedAt = note.deletedAt, deletedAt < cutoff { return true }
             return false
         }
     }
@@ -1943,6 +2071,8 @@ final class VaultViewModel: ObservableObject {
             }
 
             DispatchQueue.main.async {
+                // Imported secure notes (1Password, Bitwarden, older backups) go to Notes
+                self?.migrateSecureNotesToNotes()
                 self?.isImporting = false
                 self?.importProgress = ""
                 self?.importCategory = ""
@@ -1999,7 +2129,7 @@ final class VaultViewModel: ObservableObject {
         guard let url = ExportService.shared.showSavePanel(format: .encryptedBackup) else { return }
 
         let settings = settingsViewModel?.toVaultSettings() ?? VaultSettings.defaults
-        let vaultData = VaultData(items: activeItems, categories: categories, settings: settings, notes: notes, noteTags: noteTags, tasks: tasks)
+        let vaultData = VaultData(items: activeItems, categories: categories, settings: settings, notes: activeNotes, noteTags: noteTags, tasks: tasks)
 
         isExporting = true
         exportError = ""
@@ -2089,7 +2219,7 @@ final class VaultViewModel: ObservableObject {
                 guard let url = ExportService.shared.showSavePanel(format: .csv) else { return }
 
                 do {
-                    try ExportService.shared.exportCSV(items: self.activeItems, to: url)
+                    try ExportService.shared.exportCSV(items: self.activeItems, notes: self.activeNotes, to: url)
                     self.showExportSheet = false
                     self.csvExportMasterPassword = ""
                     self.settingsViewModel?.lastBackupDate = Date()
@@ -2350,7 +2480,6 @@ final class VaultViewModel: ObservableObject {
         tasks = []
         selectedNoteID = nil
         noteSearchText = ""
-        showNoteSearch = false
         activeNoteTag = "all"
         showNoteFavoritesOnly = false
         selectedItemID = nil
@@ -2406,7 +2535,6 @@ final class VaultViewModel: ObservableObject {
         tasks = []
         selectedNoteID = nil
         noteSearchText = ""
-        showNoteSearch = false
         activeNoteTag = "all"
         showNoteFavoritesOnly = false
         selectedItemID = nil

@@ -26,8 +26,10 @@ struct Note: Codable, Identifiable {
     var tag: String?
     var createdAt: Date
     var modifiedAt: Date
+    /// Soft delete: set when the note is moved to the Trash (purged after 30 days).
+    var deletedAt: Date?
 
-    init(id: UUID = UUID(), body: String = "", rtfData: Data? = nil, isFavorite: Bool = false, tag: String? = nil, createdAt: Date = Date(), modifiedAt: Date = Date()) {
+    init(id: UUID = UUID(), body: String = "", rtfData: Data? = nil, isFavorite: Bool = false, tag: String? = nil, createdAt: Date = Date(), modifiedAt: Date = Date(), deletedAt: Date? = nil) {
         self.id = id
         self.body = body
         self.rtfData = rtfData
@@ -35,11 +37,12 @@ struct Note: Codable, Identifiable {
         self.tag = tag
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
+        self.deletedAt = deletedAt
     }
 
     // Custom decoder so notes saved before favorites/tags existed still decode.
     enum CodingKeys: String, CodingKey {
-        case id, body, rtfData, isFavorite, tag, createdAt, modifiedAt
+        case id, body, rtfData, isFavorite, tag, createdAt, modifiedAt, deletedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -51,6 +54,7 @@ struct Note: Codable, Identifiable {
         tag = try c.decodeIfPresent(String.self, forKey: .tag)
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         modifiedAt = try c.decode(Date.self, forKey: .modifiedAt)
+        deletedAt = try c.decodeIfPresent(Date.self, forKey: .deletedAt)
     }
 
     /// First non-empty line of the note, trimmed. Used as the list label.

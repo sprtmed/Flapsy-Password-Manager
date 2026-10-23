@@ -204,10 +204,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
 
-            // Auto-focus search when vault is unlocked on the list panel
+            // Auto-focus search when vault is unlocked on the list or Notes panel
             if vaultViewModel.isUnlocked && vaultViewModel.currentPanel == .list {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     self?.vaultViewModel.isSearchFocused = true
+                }
+            } else if vaultViewModel.isUnlocked && vaultViewModel.currentPanel == .notes && vaultViewModel.selectedNoteID == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    self?.vaultViewModel.isNoteSearchFocused = true
                 }
             }
 

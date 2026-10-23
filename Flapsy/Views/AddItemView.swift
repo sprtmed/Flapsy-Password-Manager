@@ -75,7 +75,6 @@ struct AddItemView: View {
                 HStack(spacing: 4) {
                     TypePill(type: .login, icon: "key", label: "Login", selectedType: $vault.newType)
                     TypePill(type: .card, icon: "creditcard", label: "Card", selectedType: $vault.newType)
-                    TypePill(type: .note, icon: "doc.text", label: "Note", selectedType: $vault.newType)
                 }
             }
 

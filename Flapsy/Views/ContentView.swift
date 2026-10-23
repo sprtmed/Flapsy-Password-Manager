@@ -128,7 +128,7 @@ private struct SiteAliasOfferBar: View {
 
 /// Identifies which header/list dropdown is open. Top-level so the list's sort
 /// chip can drive the same menu system the + / … buttons use.
-enum HeaderMenuKind: Hashable { case new, more, sort, todoScope }
+enum HeaderMenuKind: Hashable { case new, more, sort, noteSort, todoScope }
 
 /// Container for all vault panels (list, add, generator, tags, settings)
 struct VaultContainerView: View {
@@ -278,6 +278,7 @@ struct VaultContainerView: View {
             // Left = Back, even if a search field still holds focus underneath. On
             // the plain list goBack() is a no-op, so the search cursor still works.
             if vault.selectedNoteID != nil { return event }                   // note editor
+            if vault.currentPanel == .notes && !vault.noteSearchText.isEmpty { return event } // typing in Notes search
             if vault.isEditingItem { return event }                           // item edit form
             return vault.goBack() ? nil : event
         }
@@ -511,8 +512,8 @@ struct VaultContainerView: View {
                 HeaderMenuItem(icon: "creditcard", label: "New card") {
                     selectMenu { vault.navigateToPanel(.addNew); vault.newType = .card }
                 }
-                HeaderMenuItem(icon: "doc.text", label: "New secure note") {
-                    selectMenu { vault.navigateToPanel(.addNew); vault.newType = .note }
+                HeaderMenuItem(icon: "note.text", label: "New note") {
+                    selectMenu { vault.navigateToPanel(.notes); vault.addNote() }
                 }
                 HeaderMenuDivider()
                 HeaderMenuItem(icon: "wand.and.stars", label: "Password generator") {
@@ -546,13 +547,19 @@ struct VaultContainerView: View {
                 }
                 HeaderMenuDivider()
                 HeaderMenuItem(icon: "trash", label: "Trash",
-                               badge: vault.trashedItems.isEmpty ? nil : "\(vault.trashedItems.count)") {
+                               badge: vault.trashCount == 0 ? nil : "\(vault.trashCount)") {
                     selectMenu { vault.navigateToPanel(.trash) }
                 }
             case .sort:
                 ForEach(SortOption.allCases, id: \.self) { option in
                     HeaderMenuItem(label: option.rawValue, selected: vault.sortOption == option) {
                         selectMenu { vault.sortOption = option }
+                    }
+                }
+            case .noteSort:
+                ForEach(SortOption.allCases, id: \.self) { option in
+                    HeaderMenuItem(label: option.rawValue, selected: vault.noteSortOption == option) {
+                        selectMenu { vault.noteSortOption = option }
                     }
                 }
             case .todoScope:

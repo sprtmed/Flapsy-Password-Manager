@@ -1,5 +1,25 @@
 import SwiftUI
 
+/// A row in the Trash: a deleted vault item or a deleted note.
+private enum TrashEntry: Identifiable {
+    case item(VaultItem)
+    case note(Note)
+
+    var id: UUID {
+        switch self {
+        case .item(let item): return item.id
+        case .note(let note): return note.id
+        }
+    }
+
+    var deletedAt: Date? {
+        switch self {
+        case .item(let item): return item.deletedAt
+        case .note(let note): return note.deletedAt
+        }
+    }
+}
+
 struct TrashView: View {
     @EnvironmentObject var vault: VaultViewModel
     @Environment(\.theme) var theme
@@ -7,7 +27,7 @@ struct TrashView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if vault.trashedItems.isEmpty {
+            if vault.trashCount == 0 {
                 emptyState
             } else {
                 header
@@ -18,7 +38,7 @@ struct TrashView: View {
             Button("Delete All", role: .destructive) { vault.emptyTrash() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Permanently delete \(vault.trashedItems.count) item(s)? This cannot be undone.")
+            Text("Permanently delete \(vault.trashCount) item(s)? This cannot be undone.")
         }
     }
 
@@ -41,7 +61,7 @@ struct TrashView: View {
 
     private var header: some View {
         HStack {
-            Text("\(vault.trashedItems.count) deleted item\(vault.trashedItems.count == 1 ? "" : "s")")
+            Text("\(vault.trashCount) deleted item\(vault.trashCount == 1 ? "" : "s")")
                 .font(.ui(11))
                 .foregroundColor(theme.textFaint)
             Spacer()
@@ -63,37 +83,47 @@ struct TrashView: View {
     private var itemList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(vault.trashedItems) { item in
-                    trashRow(item)
+                ForEach(entries) { entry in
+                    trashRow(entry)
                 }
             }
         }
     }
 
-    private func trashRow(_ item: VaultItem) -> some View {
+    /// Deleted items and notes, most recently deleted first.
+    private var entries: [TrashEntry] {
+        (vault.trashedItems.map(TrashEntry.item) + vault.trashedNotes.map(TrashEntry.note))
+            .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+    }
+
+    private func trashRow(_ entry: TrashEntry) -> some View {
         HStack(spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(theme.fieldBg)
                     .frame(width: 36, height: 36)
                 Group {
-                    switch item.type {
-                    case .card: Text("\u{1F4B3}").font(.system(size: 16))
+                    switch entry {
                     case .note: Text("\u{1F4DD}").font(.system(size: 16))
-                    case .login:
-                        Circle()
-                            .fill(theme.textGhost)
-                            .frame(width: 12, height: 12)
+                    case .item(let item):
+                        switch item.type {
+                        case .card: Text("\u{1F4B3}").font(.system(size: 16))
+                        case .note: Text("\u{1F4DD}").font(.system(size: 16))
+                        case .login:
+                            Circle()
+                                .fill(theme.textGhost)
+                                .frame(width: 12, height: 12)
+                        }
                     }
                 }
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.name)
+                Text(title(entry))
                     .font(.ui(13, weight: .semibold))
                     .foregroundColor(theme.textSecondary)
                     .lineLimit(1)
-                if let deletedAt = item.deletedAt {
+                if let deletedAt = entry.deletedAt {
                     Text(daysRemaining(deletedAt))
                         .font(.ui(10))
                         .foregroundColor(theme.textGhost)
@@ -102,7 +132,7 @@ struct TrashView: View {
 
             Spacer()
 
-            Button(action: { vault.restoreItem(item.id) }) {
+            Button(action: { restore(entry) }) {
                 Image(systemName: "arrow.uturn.backward")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(theme.accentBlueLt)
@@ -113,7 +143,7 @@ struct TrashView: View {
             .buttonStyle(.hand)
             .help("Restore")
 
-            Button(action: { vault.permanentlyDeleteItem(item.id) }) {
+            Button(action: { deletePermanently(entry) }) {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(theme.accentRed)
@@ -126,6 +156,27 @@ struct TrashView: View {
         }
         .padding(.vertical, 9)
         .padding(.horizontal, 16)
+    }
+
+    private func title(_ entry: TrashEntry) -> String {
+        switch entry {
+        case .item(let item): return item.name
+        case .note(let note): return note.displayTitle
+        }
+    }
+
+    private func restore(_ entry: TrashEntry) {
+        switch entry {
+        case .item(let item): vault.restoreItem(item.id)
+        case .note(let note): vault.restoreNote(note.id)
+        }
+    }
+
+    private func deletePermanently(_ entry: TrashEntry) {
+        switch entry {
+        case .item(let item): vault.permanentlyDeleteItem(item.id)
+        case .note(let note): vault.permanentlyDeleteNote(note.id)
+        }
     }
 
     private func daysRemaining(_ deletedAt: Date) -> String {

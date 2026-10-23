@@ -30,11 +30,7 @@ struct NotesView: View {
     private var notesList: some View {
         VStack(spacing: 0) {
             header
-
-            if vault.showNoteSearch {
-                searchBar
-            }
-
+            searchBar
             tagFilterRow
 
             if vault.noteEntries.isEmpty {
@@ -52,36 +48,35 @@ struct NotesView: View {
                     }
                 }
             }
+
+            VaultFooterBar(countLabel: "\(vault.activeNotes.count) note\(vault.activeNotes.count == 1 ? "" : "s")")
         }
-        .onChange(of: vault.showNoteSearch) { isOn in
-            if isOn { listSearchFocused = true }
+        // Search is always shown in the list and focused, like the vault search
+        .onAppear { focusListSearch(after: 0.1) }
+        .onChange(of: vault.selectedNoteID) { id in
+            if id == nil { focusListSearch(after: 0.35) }   // back from the editor
+        }
+        .onChange(of: vault.isNoteSearchFocused) { focused in
+            if focused {
+                vault.isNoteSearchFocused = false
+                focusListSearch(after: 0)
+            }
+        }
+    }
+
+    private func focusListSearch(after delay: Double) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            if vault.selectedNoteID == nil { listSearchFocused = true }
         }
     }
 
     private var header: some View {
         HStack(spacing: 8) {
-            Text("\(vault.notes.count) note\(vault.notes.count == 1 ? "" : "s")")
+            Text("\(vault.activeNotes.count) note\(vault.activeNotes.count == 1 ? "" : "s")")
                 .font(.ui(11))
                 .foregroundColor(theme.textGhost)
 
             Spacer()
-
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    vault.showNoteSearch.toggle()
-                    if !vault.showNoteSearch { vault.noteSearchText = "" }
-                }
-            }) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12))
-                    .foregroundColor(vault.showNoteSearch ? theme.accentBlueLt : theme.textSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(vault.showNoteSearch ? theme.pillBg : theme.fieldBg)
-                    .cornerRadius(6)
-            }
-            .buttonStyle(.hand)
-            .help("Search notes")
 
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.15)) { _ = vault.addNote() }
@@ -143,53 +138,94 @@ struct NotesView: View {
         .padding(.bottom, 8)
     }
 
+    /// Same layout as the vault list's filter row: scrollable tags left, sort chip right.
     private var tagFilterRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 2) {
-                FilterPill(title: "All", isActive: vault.activeNoteTag == "all" && !vault.showNoteFavoritesOnly) {
-                    vault.activeNoteTag = "all"
-                    vault.showNoteFavoritesOnly = false
-                }
-
-                Button(action: {
-                    vault.showNoteFavoritesOnly.toggle()
-                    if vault.showNoteFavoritesOnly { vault.activeNoteTag = "all" }
-                }) {
-                    Text(vault.showNoteFavoritesOnly ? "\u{2605}" : "\u{2606}")
-                        .font(.system(size: 13))
-                        .foregroundColor(vault.showNoteFavoritesOnly ? Color(hex: "fbbf24") : theme.textMuted)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(vault.showNoteFavoritesOnly ? theme.pillBg : Color.clear)
-                        .cornerRadius(20)
-                }
-                .buttonStyle(.hand)
-                .help("Favorites only")
-
-                ForEach(vault.noteTags) { tag in
-                    CategoryPill(
-                        label: tag.label,
-                        colorHex: tag.color,
-                        isActive: vault.activeNoteTag == tag.key
-                    ) {
-                        vault.activeNoteTag = tag.key
+        HStack(spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 2) {
+                    FilterPill(title: "\u{229E} All", isActive: vault.activeNoteTag == "all" && !vault.showNoteFavoritesOnly) {
+                        vault.activeNoteTag = "all"
                         vault.showNoteFavoritesOnly = false
                     }
-                }
 
-                Button(action: { vault.navigateToPanel(.noteTags) }) {
-                    Text("\u{FF0B}")
-                        .font(.system(size: 13))
-                        .foregroundColor(theme.textFaint)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
+                    Button(action: {
+                        vault.showNoteFavoritesOnly.toggle()
+                        if vault.showNoteFavoritesOnly { vault.activeNoteTag = "all" }
+                    }) {
+                        Text(vault.showNoteFavoritesOnly ? "\u{2605}" : "\u{2606}")
+                            .font(.system(size: 13))
+                            .foregroundColor(vault.showNoteFavoritesOnly ? Color(hex: "fbbf24") : theme.textMuted)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(vault.showNoteFavoritesOnly ? theme.pillBg : Color.clear)
+                            .cornerRadius(20)
+                    }
+                    .buttonStyle(.hand)
+                    .help("Favorites only")
+
+                    ForEach(vault.noteTags) { tag in
+                        CategoryPill(
+                            label: tag.label,
+                            colorHex: tag.color,
+                            isActive: vault.activeNoteTag == tag.key
+                        ) {
+                            vault.activeNoteTag = tag.key
+                            vault.showNoteFavoritesOnly = false
+                        }
+                    }
+
+                    Button(action: { vault.navigateToPanel(.noteTags) }) {
+                        Text("\u{FF0B}")
+                            .font(.system(size: 13))
+                            .foregroundColor(theme.textFaint)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                    }
+                    .buttonStyle(.hand)
+                    .help("Manage tags")
                 }
-                .buttonStyle(.hand)
-                .help("Manage tags")
             }
+
+            noteSortMenu
         }
         .padding(.horizontal, 16)
+        .padding(.top, 8)
         .padding(.bottom, 6)
+    }
+
+    /// Sort chip — opens the shared anchored dropdown (same as the vault list's sort).
+    private var noteSortMenu: some View {
+        let isOpen = vault.openHeaderMenu == .noteSort
+        return Button(action: {
+            withAnimation(.easeOut(duration: 0.12)) {
+                vault.openHeaderMenu = isOpen ? nil : .noteSort
+            }
+        }) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.system(size: 10, weight: .medium))
+                Text(vault.noteSortOption.rawValue)
+                    .font(.ui(11, weight: .medium))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .rotationEffect(.degrees(isOpen ? 180 : 0))
+            }
+            .foregroundColor(isOpen ? theme.text : theme.textMuted)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(theme.fieldBg)
+            .cornerRadius(7)
+            .fixedSize()
+        }
+        .buttonStyle(.hand)
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: HeaderMenuAnchorKey.self,
+                    value: [HeaderMenuKind.noteSort: geo.frame(in: .named("vaultContainer"))]
+                )
+            }
+        )
     }
 
     private var emptyState: some View {

@@ -101,9 +101,9 @@ final class ExportService {
 
     // MARK: - Export CSV
 
-    /// Exports all vault items as a CSV file.
-    func exportCSV(items: [VaultItem], to url: URL) throws {
-        guard !items.isEmpty else { throw ExportError.noItems }
+    /// Exports all vault items, plus Notes-app notes as `note` rows, as a CSV file.
+    func exportCSV(items: [VaultItem], notes: [Note] = [], to url: URL) throws {
+        guard !items.isEmpty || !notes.isEmpty else { throw ExportError.noItems }
 
         var csv = "type,name,url,username,password,totp_secret,cardholder,card_number,expiry,cvv,notes,category,favorite,created,modified\n"
 
@@ -124,6 +124,21 @@ final class ExportService {
                 item.isFavorite ? "1" : "0",
                 ISO8601DateFormatter().string(from: item.createdAt),
                 ISO8601DateFormatter().string(from: item.modifiedAt)
+            ]
+            csv += row.joined(separator: ",") + "\n"
+        }
+
+        // Notes: first line as the name, full text in the notes column, tag as the category
+        for note in notes {
+            let row = [
+                ItemType.note.rawValue,
+                escapeCSVField(note.displayTitle),
+                "", "", "", "", "", "", "", "",
+                escapeCSVField(note.body),
+                escapeCSVField(note.tag ?? ""),
+                note.isFavorite ? "1" : "0",
+                ISO8601DateFormatter().string(from: note.createdAt),
+                ISO8601DateFormatter().string(from: note.modifiedAt)
             ]
             csv += row.joined(separator: ",") + "\n"
         }

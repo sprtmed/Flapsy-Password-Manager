@@ -190,10 +190,6 @@ struct VaultListView: View {
                 vault.typeFilter = .card
                 vault.selectedItemID = nil
             }
-            ScopeButton(icon: "doc.text", label: "Notes", isActive: vault.typeFilter == .note) {
-                vault.typeFilter = .note
-                vault.selectedItemID = nil
-            }
         }
         .padding(3)
         .background(theme.fieldBg)
@@ -298,6 +294,7 @@ struct VaultListView: View {
     private var itemList: some View {
         let items = vault.filteredItems
         let readyID = movedSelectionWithArrows ? nil : vault.readySiteMatch(in: items)?.id
+        let noteEntries = vault.vaultSearchNoteEntries
         return ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(items) { item in
@@ -306,7 +303,7 @@ struct VaultListView: View {
                 if items.isEmpty {
                     if vault.isSiteSearch, let site = vault.browserSite {
                         siteEmptyState(site)
-                    } else {
+                    } else if noteEntries.isEmpty {
                         Text("No items found")
                             .font(.ui(12))
                             .foregroundColor(theme.textFaint)
@@ -314,10 +311,85 @@ struct VaultListView: View {
                             .padding(.vertical, 30)
                     }
                 }
+                if !noteEntries.isEmpty {
+                    notesSection(noteEntries)
+                }
             }
         }
         .frame(maxHeight: .infinity)
         .layoutPriority(1)
+    }
+
+    // MARK: - Notes in Search Results
+
+    private static let maxSearchNotes = 5
+
+    /// Notes matching the vault search, below the items. Tapping one opens it in Notes.
+    private func notesSection(_ entries: [NoteListEntry]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("NOTES \u{00B7} \(entries.count)")
+                .font(.ui(10, weight: .bold))
+                .tracking(0.6)
+                .foregroundColor(theme.textFaint)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 4)
+
+            ForEach(entries.prefix(Self.maxSearchNotes)) { entry in
+                searchNoteRow(entry)
+            }
+
+            if entries.count > Self.maxSearchNotes {
+                Button(action: { vault.showVaultSearchInNotes() }) {
+                    Text("Show all \(entries.count) in Notes")
+                        .font(.ui(11, weight: .medium))
+                        .foregroundColor(theme.accentBlueLt)
+                }
+                .buttonStyle(.hand)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+        }
+    }
+
+    private func searchNoteRow(_ entry: NoteListEntry) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(theme.fieldBg)
+                    .frame(width: 36, height: 36)
+                Image(systemName: "note.text")
+                    .font(.system(size: 14))
+                    .foregroundColor(theme.textSecondary)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.note.displayTitle)
+                    .font(.ui(13, weight: .semibold))
+                    .foregroundColor(theme.text)
+                    .lineLimit(1)
+                (Text(entry.prefix).foregroundColor(theme.textFaint)
+                 + Text(entry.match).foregroundColor(theme.accentBlueLt).bold()
+                 + Text(entry.suffix).foregroundColor(theme.textFaint))
+                    .font(.ui(11))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
+            Spacer(minLength: 0)
+
+            if entry.note.isFavorite {
+                Text("\u{2605}")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "fbbf24"))
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .contentShape(Rectangle())
+        .onTapGesture { withAnimation(.easeInOut(duration: 0.15)) { vault.openNoteFromVaultSearch(entry.note.id) } }
+        .handCursor()
+        .help("Open in Notes")
     }
 
     // MARK: - Browser Site Empty State
@@ -384,18 +456,35 @@ struct VaultListView: View {
     // MARK: - Footer
 
     private var footer: some View {
+        VaultFooterBar(countLabel: "\(vault.activeItems.count) items")
+    }
+}
+
+// MARK: - Footer Bar
+
+/// Bottom status bar: count · AES-256 · version, Trash shortcut, auto-lock, update notice.
+/// Shared by the vault list and the Notes list.
+struct VaultFooterBar: View {
+    /// e.g. "42 items" or "12 notes".
+    let countLabel: String
+    @EnvironmentObject var vault: VaultViewModel
+    @EnvironmentObject var settings: SettingsViewModel
+    @EnvironmentObject var updateCheck: UpdateCheckService
+    @Environment(\.theme) var theme
+
+    var body: some View {
         VStack(spacing: 4) {
             HStack {
-                Text("\(vault.activeItems.count) items \u{00B7} AES-256 \u{00B7} v\(updateCheck.currentVersion)")
+                Text("\(countLabel) \u{00B7} AES-256 \u{00B7} v\(updateCheck.currentVersion)")
                     .font(.ui(10))
                     .foregroundColor(theme.textGhost)
                 Spacer()
-                if !vault.trashedItems.isEmpty {
+                if vault.trashCount > 0 {
                     Button(action: { vault.navigateToPanel(.trash) }) {
                         HStack(spacing: 3) {
                             Image(systemName: "trash")
                                 .font(.system(size: 9))
-                            Text("\(vault.trashedItems.count)")
+                            Text("\(vault.trashCount)")
                                 .font(.ui(10))
                         }
                         .foregroundColor(theme.textGhost)
